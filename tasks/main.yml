@@ -83,11 +83,11 @@
         - {section: 'postgres', option: 'database',      value: 'mamonsu'}
         - {section: 'postgres', option: 'query_timeout', value: '60'}
         - {section: 'zabbix',   option: 'address',       value: '{{ mamonsu_zabbix_server_ip }}'}
-        - {section: 'zabbix',   option: 'port',          value: '{{ mamonsu_zabbix_server_port | d(10051, true)}}'}
+        - {section: 'zabbix',   option: 'port',          value: '{{ mamonsu_zabbix_server_port | d(10051, true) }}'}
         - {section: 'zabbix',   option: 'client',        value: '{{ inventory_hostname }}'}
         - {section: 'log',      option: 'file',          value: '{{ mamonsu_log_file }}'}
         - {section: 'plugins',  option: 'enabled',       value: 'True'}
-        - {section: 'pgbuffercache',  option: 'interval',value: '{{ mamonsu_interval_pgbuffercache | d(1200, true)}}'}
+        - {section: 'pgbuffercache',  option: 'interval',value: '{{ mamonsu_interval_pgbuffercache | d(1200, true) }}'}
       loop_control:
         label: "{{ item.option }}"
 
