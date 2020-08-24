@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Git clone repo ansible-role-pgcenter
+    - name: Git clone repo ansible-role-mamonsu
       uses: actions/checkout@v2
 
     - name: Lint Ansible Playbook "ansible-role-mamonsu". Commit ${{ github.sha }}
