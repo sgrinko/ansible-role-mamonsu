@@ -1,0 +1,46 @@
+select not pg_is_in_recovery() as is_master \gset
+\if :is_master
+  select current_database() = 'mamonsu' as is_mamonsu_db \gset
+  \if :is_mamonsu_db
+    select '''' || case when current_setting('shared_buffers') like '%GB'
+                        then (replace(current_setting('shared_buffers'), 'GB', '')::int)*1024
+                        else replace(current_setting('shared_buffers'), 'MB', '')::int
+                   end * 0.0122 || ' MB''' as highpage_mb \gset
+    ALTER FUNCTION public.mamonsu_buffer_cache() SET WORK_MEM = :highpage_mb; -- for shared_buffers 16 Гб 200 Мб
+  \endif
+  -- we give the right to connect for the role of mamonsu
+  do $$ begin execute 'GRANT CONNECT ON DATABASE "' || current_database() || '" TO mamonsu; '; end $$;
+  do $$ begin
+      if current_database() = 'mamonsu' then
+          -- adjust lag calculation
+          CREATE OR REPLACE FUNCTION public.mamonsu_timestamp_get() RETURNS double precision AS
+          $BODY$
+              select case when pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() then 0
+                          else extract (epoch from now() - pg_last_xact_replay_timestamp())
+                     end;
+          $BODY$
+          LANGUAGE sql VOLATILE SECURITY DEFINER;
+          GRANT EXECUTE ON FUNCTION public.mamonsu_buffer_cache() TO pg_monitor;
+          GRANT EXECUTE ON FUNCTION public.mamonsu_buffer_cache() TO mamonsu;
+{% if mamonsu_plugin_pg_stat_replication|d(true,true)|bool %}
+          -- function support for plugin pg_stat_replication
+          CREATE OR REPLACE FUNCTION public.mamonsu_pg_stat_replication()
+          RETURNS TABLE(write_lag double precision, flush_lag double precision, replay_lag double precision) AS
+          $BODY$
+              select coalesce(extract(epoch from write_lag),0) as write_lag, 
+                     coalesce(extract(epoch from flush_lag),0) as flush_lag, 
+                     coalesce(extract(epoch from replay_lag),0) as replay_lag 
+              from pg_catalog.pg_stat_replication
+              order by client_hostname;
+          $BODY$
+          LANGUAGE sql VOLATILE SECURITY DEFINER;
+          GRANT EXECUTE ON FUNCTION public.mamonsu_pg_stat_replication() TO pg_monitor;
+          GRANT EXECUTE ON FUNCTION public.mamonsu_pg_stat_replication() TO mamonsu;
+{% endif %}
+      end if;
+  end $$;
+  CREATE EXTENSION IF NOT EXISTS pg_buffercache;
+  CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+  GRANT USAGE ON SCHEMA pg_catalog TO mamonsu;
+  GRANT SELECT ON TABLE pg_proc TO mamonsu;
+\endif

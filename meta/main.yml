@@ -1,0 +1,23 @@
+galaxy_info:
+  role_name: mamonsu
+  description: Install mamonsu (monitoring agent for PostgreSQL from PostgresPro company)
+  author: Sergey Grinko (sergey.grinko@gmail.com)
+  license: MIT
+  min_ansible_version: 2.4
+
+  platforms:
+    - name: EL
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+  galaxy_tags:
+    - mamonsu
+    - postgresql
+    - postgres
+
+dependencies: []

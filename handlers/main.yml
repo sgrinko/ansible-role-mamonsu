@@ -1,0 +1,11 @@
+---
+
+- name: Restart mamonsu service
+  systemd:
+    daemon_reload: true
+    name: mamonsu
+    enabled: true
+    state: restarted
+  listen: "restart mamonsu"
+
+...

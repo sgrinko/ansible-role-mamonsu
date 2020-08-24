@@ -1,0 +1,178 @@
+---
+# yamllint disable rule:line-length
+# yamllint disable rule:comments-indentation
+
+- block:  # mamonsu_install|bool
+
+    # Debian/Ubuntu
+    - name: Add repository apt-key
+      apt_key:
+        url: "{{ item.key }}"
+        state: present
+      loop: "{{ apt_repository_keys }}"
+      when: apt_repository_keys | length > 0 and
+            ansible_os_family == "Debian"
+
+    - name: Add repository
+      apt_repository:
+        repo: "{{ item.repo }}"
+        state: present
+        update_cache: true
+      loop: "{{ apt_repository }}"
+      when: apt_repository | length > 0 and
+            ansible_os_family == "Debian"
+
+    # CentOS
+    - name: Install mamonsu | Get mamonsu keys for repo.postgrespro.ru
+      yum:
+        name: https://repo.postgrespro.ru/mamonsu/keys/mamonsu-repo-centos.noarch.rpm
+        state: present
+      when: ansible_os_family == "RedHat" and
+            ansible_distribution_major_version == '7'
+
+    - name: Install mamonsu | install package
+      package:
+        name: mamonsu
+        state: latest
+      when: ansible_os_family == "Debian" or
+            (ansible_os_family == "RedHat" and
+            ansible_distribution_major_version == '7')
+
+    # RHEL 8
+    - name: Install mamonsu | Get mamonsu keys for repo.postgrespro.ru RHEL 8
+      dnf:
+        name: https://repo.postgrespro.ru/mamonsu/keys/mamonsu-repo-centos.noarch.rpm
+        state: present
+      when: ansible_os_family == "RedHat" and
+            ansible_distribution_major_version >= '8'
+
+    - name: Install mamonsu | install package RHEL 8
+      dnf:
+        name: mamonsu
+        disablerepo: AppStream
+        state: latest
+      when: ansible_os_family == "RedHat" and
+            ansible_distribution_major_version >= '8'
+
+    # general installation steps ...
+    - name: Install mamonsu | Enable log rotation with logrotate
+      copy:
+        content: |
+          {{ mamonsu_log_file }} {
+              daily
+              rotate 7
+              compress
+              missingok
+              notifempty
+              create 0640 mamonsu mamonsu
+              sharedscripts
+              postrotate
+                  [ -e /var/run/mamonsu/mamonsu.pid ] && /etc/init.d/mamonsu restart >/dev/null
+              endscript
+          }
+        dest: /etc/logrotate.d/mamonsu
+
+    - name: Install mamonsu | Prepare agent.conf file (replace "user","database","query_timeout", "address",...)
+      ini_file:
+        path: /etc/mamonsu/agent.conf
+        section: "{{ item.section }}"
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      loop:
+        - {section: 'postgres', option: 'user',          value: 'mamonsu'}
+        - {section: 'postgres', option: 'database',      value: 'mamonsu'}
+        - {section: 'postgres', option: 'query_timeout', value: '60'}
+        - {section: 'zabbix',   option: 'address',       value: '{{ mamonsu_zabbix_server_ip }}'}
+        - {section: 'zabbix',   option: 'port',          value: '{{ mamonsu_zabbix_server_port | d(10051, true)}}'}
+        - {section: 'zabbix',   option: 'client',        value: '{{ inventory_hostname }}'}
+        - {section: 'log',      option: 'file',          value: '{{ mamonsu_log_file }}'}
+        - {section: 'plugins',  option: 'enabled',       value: 'True'}
+        - {section: 'pgbuffercache',  option: 'interval',value: '{{ mamonsu_interval_pgbuffercache | d(1200, true)}}'}
+      loop_control:
+        label: "{{ item.option }}"
+
+    - name: Install mamonsu | Copy mamonsu plugin
+      template:
+        src: templates/pg_stat_replication.py.j2
+        dest: /etc/mamonsu/plugins/pg_stat_replication.py
+        mode: 0644
+      when: mamonsu_plugin_pg_stat_replication|d(true,true)|bool
+      
+    - name: Create "~postgres/mamonsu_setup.sql"  # yamllint disable rule:line-length
+      copy:
+        content: |
+          select not pg_is_in_recovery() as is_master \gset
+          \if :is_master
+            DROP DATABASE IF EXISTS mamonsu;
+            CREATE DATABASE mamonsu;
+          \endif
+        dest: ~postgres/mamonsu_setup.sql
+        owner: postgres
+        group: postgres
+        mode: 0600
+
+    - name: Install mamonsu | Setup bootstrap mamonsu - RECREATE DATABASE IF EXISTS mamonsu
+      become: true
+      become_user: postgres
+      shell: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_setup.sql postgres"
+
+    - name: Create "~postgres/mamonsu_db_genallrun.sql"  # yamllint disable rule:line-length
+      copy:
+        content: |
+          select '\c ' || datname || '
+          \i ~postgres/mamonsu_right_add.sql
+          '
+          from pg_database where not datistemplate and not pg_is_in_recovery();
+        dest: ~postgres/mamonsu_db_genallrun.sql
+        owner: postgres
+        group: postgres
+        mode: 0600
+
+    - name: Create "~postgres/mamonsu_user_add.sql"  # yamllint disable rule:line-length
+      copy:
+        content: |
+          do $$ begin
+            if not pg_is_in_recovery() and not exists(select * from pg_roles where rolname = 'mamonsu') then
+              CREATE ROLE mamonsu LOGIN NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
+            end if;
+          end
+          $$;
+        dest: ~postgres/mamonsu_user_add.sql
+        owner: postgres
+        group: postgres
+        mode: 0600
+
+    - name: Install mamonsu | Copy mamonsu setup DB files to server
+      template:
+        src: templates/mamonsu_right_add.sql.j2
+        dest: ~postgres/mamonsu_right_add.sql
+        owner: postgres
+        group: postgres
+        mode: 0644
+
+    - name: Install mamonsu | Setup bootstrap mamonsu - add rights to DB
+      become: true
+      become_user: postgres
+      shell: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_user_add.sql postgres"
+
+    - name: Prepare PostgreSQL | Setup bootstrap mamonsu - init DB mamonsu
+      become: true
+      become_user: postgres
+      shell: "if psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as is_master' postgres | grep '1' ; then mamonsu bootstrap -M mamonsu -U postgres -d mamonsu --port={{ postgresql_port|d(5432,true) }} ; fi"
+
+    - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (generate script)
+      become: true
+      become_user: postgres
+      shell: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres"
+
+    - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (run script)
+      become: true
+      become_user: postgres
+      shell: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun_out.sql postgres"
+      notify: "restart mamonsu"
+
+  environment: "{{ proxy_env | default({}) }}"
+  when: mamonsu_install|bool
+  tags: mamonsu
+
+...
