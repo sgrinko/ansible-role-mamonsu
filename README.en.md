@@ -1,5 +1,7 @@
 # ansible-role-mamonsu
 
+[![Ansible Galaxy](https://img.shields.io/badge/galaxy-sgrinko.mamonsu-blue)](https://galaxy.ansible.com/sgrinko/mamonsu/) ![GitHub stars](https://img.shields.io/github/stars/vitabaks/postgresql_cluster) [![GitHub license](https://img.shields.io/github/license/sgrinko/ansible-role-mamonsu)](https://github.com/sgrinko/ansible-role-mamonsu/blob/master/LICENSE)
+
 Install [mamonsu](https://github.com/postgrespro/mamonsu) (Monitoring agent for PostgreSQL) with Ansible.
 
 ## Compatibility
