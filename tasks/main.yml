@@ -99,7 +99,7 @@
         dest: /etc/mamonsu/plugins/pg_stat_replication.py
         mode: 0644
       when: mamonsu_plugin_pg_stat_replication|d(true,true)|bool
-      
+
     - name: Create "~postgres/mamonsu_setup.sql"  # yamllint disable rule:line-length
       copy:
         content: |
@@ -165,7 +165,7 @@
         if psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
           mamonsu bootstrap -M mamonsu -U postgres -d mamonsu --port={{ postgresql_port|d(5432,true) }} ;
         fi
-      
+
     - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (generate script)
       become: true
       become_user: postgres
