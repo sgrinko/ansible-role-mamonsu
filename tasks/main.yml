@@ -70,6 +70,7 @@
                   [ -e /var/run/mamonsu/mamonsu.pid ] && /etc/init.d/mamonsu restart >/dev/null
               endscript
           }
+        mode: 0644
         dest: /etc/logrotate.d/mamonsu
 
     - name: Install mamonsu | Prepare agent.conf file (replace "user","database","query_timeout", "address",...)
@@ -103,6 +104,7 @@
         content: |
           select not pg_is_in_recovery() as is_master \gset
           \if :is_master
+            select pg_terminate_backend(pid) from pg_catalog.pg_stat_activity where datname = 'mamonsu';
             DROP DATABASE IF EXISTS mamonsu;
             CREATE DATABASE mamonsu;
           \endif
@@ -153,22 +155,25 @@
     - name: Install mamonsu | Setup bootstrap mamonsu - add rights to DB
       become: true
       become_user: postgres
-      shell: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_user_add.sql postgres"
+      command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_user_add.sql postgres"
 
-    - name: Prepare PostgreSQL | Setup bootstrap mamonsu - init DB mamonsu
+    - name: Prepare PostgreSQL | Setup bootstrap mamonsu - run script  # noqa 305
       become: true
       become_user: postgres
-      shell: "if psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as is_master' postgres | grep '1' ; then mamonsu bootstrap -M mamonsu -U postgres -d mamonsu --port={{ postgresql_port|d(5432,true) }} ; fi"
-
+      shell: |
+        if psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
+          mamonsu bootstrap -M mamonsu -U postgres -d mamonsu --port={{ postgresql_port|d(5432,true) }} ;
+        fi
+      
     - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (generate script)
       become: true
       become_user: postgres
-      shell: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres"
+      command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres"
 
     - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (run script)
       become: true
       become_user: postgres
-      shell: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun_out.sql postgres"
+      command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun_out.sql postgres"
       notify: "restart mamonsu"
 
   environment: "{{ proxy_env | default({}) }}"
