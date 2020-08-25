@@ -79,6 +79,7 @@
         section: "{{ item.section }}"
         option: "{{ item.option }}"
         value: "{{ item.value }}"
+        mode: 0644
       loop:
         - {section: 'postgres', option: 'user',          value: 'mamonsu'}
         - {section: 'postgres', option: 'database',      value: 'mamonsu'}
@@ -116,7 +117,7 @@
     - name: Install mamonsu | Setup bootstrap mamonsu - RECREATE DATABASE IF EXISTS mamonsu
       become: true
       become_user: postgres
-      shell: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_setup.sql postgres"
+      command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_setup.sql postgres"
 
     - name: Create "~postgres/mamonsu_db_genallrun.sql"  # yamllint disable rule:line-length
       copy:
