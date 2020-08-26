@@ -5,22 +5,18 @@
 - block:  # mamonsu_install|bool
 
     # Debian/Ubuntu
-    - name: Add repository apt-key
+    - name: Install mamonsu | Add mamonsu repository apt-key
       apt_key:
-        url: "{{ item.key }}"
+        url: "https://repo.postgrespro.ru/mamonsu/keys/GPG-KEY-MAMONSU" # mamonsu repository apt key
         state: present
-      loop: "{{ apt_repository_keys }}"
-      when: apt_repository_keys | length > 0 and
-            ansible_os_family == "Debian"
+      when: ansible_os_family == "Debian"
 
-    - name: Add repository
+    - name: Install mamonsu | Add mamonsu repository
       apt_repository:
-        repo: "{{ item.repo }}"
+        repo: "deb [arch=amd64] https://repo.postgrespro.ru/mamonsu/latest/deb/ {{ ansible_distribution_release }} main-{{ ansible_distribution_release }}"  # mamonsu debian repo (optional)
         state: present
         update_cache: true
-      loop: "{{ apt_repository }}"
-      when: apt_repository | length > 0 and
-            ansible_os_family == "Debian"
+      when: ansible_os_family == "Debian"
 
     # CentOS
     - name: Install mamonsu | Get mamonsu keys for repo.postgrespro.ru
@@ -119,7 +115,7 @@
       become_user: postgres
       command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_setup.sql postgres"
 
-    - name: Create "~postgres/mamonsu_db_genallrun.sql"  # yamllint disable rule:line-length
+    - name: Install mamonsu | Create "~postgres/mamonsu_db_genallrun.sql"  # yamllint disable rule:line-length
       copy:
         content: |
           select '\c ' || datname || '
@@ -131,7 +127,7 @@
         group: postgres
         mode: 0600
 
-    - name: Create "~postgres/mamonsu_user_add.sql"  # yamllint disable rule:line-length
+    - name: Install mamonsu | Create "~postgres/mamonsu_user_add.sql"  # yamllint disable rule:line-length
       copy:
         content: |
           do $$ begin
@@ -158,7 +154,7 @@
       become_user: postgres
       command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_user_add.sql postgres"
 
-    - name: Prepare PostgreSQL | Setup bootstrap mamonsu - run script  # noqa 305
+    - name: Install mamonsu | Setup bootstrap mamonsu - create environment # noqa 305
       become: true
       become_user: postgres
       shell: |

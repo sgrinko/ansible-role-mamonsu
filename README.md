@@ -21,9 +21,6 @@ proxy_env:
   http_proxy: http://10.128.64.9:3128
   https_proxy: http://10.128.64.9:3128
 ```
-`apt_repository_keys` - ключи репозитария (используется только на Debian/Ubuntu OS)
-
-`apt_repository` - ссылка для репозитария (используется только на Debian/Ubuntu OS)
 ###### необязательные переменные:
 `mamonsu_plugin_pg_stat_replication` - true если необходимо установить дополнительный пользовательский плагин pg_stat_replication. По умолчанию: true
 

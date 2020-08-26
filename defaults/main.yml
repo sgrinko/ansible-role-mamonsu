@@ -15,10 +15,3 @@ mamonsu_zabbix_server_port: "10051"                # port zabbix server
 mamonsu_interval_pgbuffercache: 1200               # set interval call for plugin pg_buffercache.py
 mamonsu_log_file: "/var/log/mamonsu/agent.log"     # name log file 
 mamonsu_plugin_pg_stat_replication: true           # true if need install plugin pg_stat_replication
-
-# This variable used on Debian/Ubuntu only 
-apt_repository_keys:
-  - key: "https://repo.postgrespro.ru/mamonsu/keys/GPG-KEY-MAMONSU" # mamonsu repository apt key
-
-apt_repository:
-  - repo: "deb [arch=amd64] https://repo.postgrespro.ru/mamonsu/latest/deb/ {{ ansible_distribution_release }} main-{{ ansible_distribution_release }}"  # mamonsu debian repo (optional)
