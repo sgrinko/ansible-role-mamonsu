@@ -13,7 +13,7 @@
 
     - name: Install mamonsu | Add mamonsu repository
       apt_repository:
-        repo: "deb [arch=amd64] https://repo.postgrespro.ru/mamonsu/latest/deb/ {{ ansible_distribution_release }} main-{{ ansible_distribution_release }}"  # mamonsu debian repo (optional)
+        repo: "deb [arch=amd64] https://repo.postgrespro.ru/mamonsu/latest/deb/ {{ ansible_distribution_release }} main-{{ ansible_distribution_release }}"
         state: present
         update_cache: true
       when: ansible_os_family == "Debian"
