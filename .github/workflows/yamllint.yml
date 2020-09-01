@@ -1,2 +1,0 @@
-- name: YAML Lint
-  uses: ibiqlik/action-yamllint@v1.0.0
