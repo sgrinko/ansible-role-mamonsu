@@ -9,9 +9,13 @@ postgresql_port: 5432
 
 # -------------------------------------------
 # to set up mamonsu monitoring
-mamonsu_install: true                              # true if you need to configure mamonsu
-mamonsu_zabbix_server_ip: "zabbix.server.ru"       # IP zabbix server
-mamonsu_zabbix_server_port: "10051"                # port zabbix server
-mamonsu_interval_pgbuffercache: 1200               # set interval call for plugin pg_buffercache.py
-mamonsu_log_file: "/var/log/mamonsu/agent.log"     # name log file 
-mamonsu_plugin_pg_stat_replication: true           # true if need install plugin pg_stat_replication
+mamonsu_install: true                                # true if you need to configure mamonsu
+mamonsu_zabbix_server_ip: "zabbix.server.ru"         # IP zabbix server
+mamonsu_zabbix_server_port: "10051"                  # port zabbix server
+mamonsu_interval_pgbuffercache: 1200                 # set interval call for plugin pg_buffercache.py
+mamonsu_log_path: "/var/log/mamonsu/"                # path name for log file 
+mamonsu_log_file: "agent.log"                        # name log file 
+mamonsu_plugin_pg_stat_replication: true             # true if need install plugin pg_stat_replication
+mamonsu_pgprobackup_enable: "False"                  # true if you need to enable plugin pgprobackup
+mamonsu_pgprobackup_dirs: "/mnt/pgbak"               # dirs for check size: /mnt/pgbak or none for disable plugin pgprobackup
+mamonsu_pgprobackup_path: "/usr/bin/pg_probackup-12" # full path name for utility pg_probackup  

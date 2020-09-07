@@ -5,23 +5,28 @@
 - block:  # mamonsu_install|bool
 
     # Debian/Ubuntu
-    - name: Install mamonsu | Add mamonsu repository apt-key
-      apt_key:
-        url: "https://repo.postgrespro.ru/mamonsu/keys/GPG-KEY-MAMONSU" # mamonsu repository apt key
-        state: present
+    - name: Install mamonsu | Load apt-repo-add.sh file
+      get_url:
+        url: "https://repo.postgrespro.ru/mamonsu/keys/apt-repo-add.sh"  # noqa 204
+        dest: /tmp/
+        timeout: 30
+        validate_certs: false
       when: ansible_os_family == "Debian"
 
-    - name: Install mamonsu | Add mamonsu repository
-      apt_repository:
-        repo: "deb [arch=amd64] https://repo.postgrespro.ru/mamonsu/latest/deb/ {{ ansible_distribution_release }} main-{{ ansible_distribution_release }}"
-        state: present
-        update_cache: true
+    - name: Install mamonsu | Set attribute apt-repo-add.sh file
+      become: true
+      command: "chmod 700 /tmp/apt-repo-add.sh"
+      when: ansible_os_family == "Debian"
+
+    - name: Install mamonsu | Start apt-repo-add.sh file
+      become: true
+      command: "/tmp/apt-repo-add.sh"
       when: ansible_os_family == "Debian"
 
     # CentOS
     - name: Install mamonsu | Get mamonsu keys for repo.postgrespro.ru
       yum:
-        name: https://repo.postgrespro.ru/mamonsu/keys/mamonsu-repo-centos.noarch.rpm
+        name: https://repo.postgrespro.ru/mamonsu/keys/centos.rpm
         state: present
       when: ansible_os_family == "RedHat" and
             ansible_distribution_major_version == '7'
@@ -37,7 +42,7 @@
     # RHEL 8
     - name: Install mamonsu | Get mamonsu keys for repo.postgrespro.ru RHEL 8
       dnf:
-        name: https://repo.postgrespro.ru/mamonsu/keys/mamonsu-repo-centos.noarch.rpm
+        name: https://repo.postgrespro.ru/mamonsu/keys/centos.rpm
         state: present
       when: ansible_os_family == "RedHat" and
             ansible_distribution_major_version >= '8'
@@ -54,13 +59,13 @@
     - name: Install mamonsu | Enable log rotation with logrotate
       copy:
         content: |
-          {{ mamonsu_log_file }} {
+          {{ mamonsu_log_path }}{{ mamonsu_log_file }} {
               daily
               rotate 7
               compress
               missingok
               notifempty
-              create 0640 mamonsu mamonsu
+              create 0640 postgres postgres
               sharedscripts
               postrotate
                   [ -e /var/run/mamonsu/mamonsu.pid ] && /etc/init.d/mamonsu restart >/dev/null
@@ -77,17 +82,37 @@
         value: "{{ item.value }}"
         mode: 0644
       loop:
-        - {section: 'postgres', option: 'user',           value: 'mamonsu'}
-        - {section: 'postgres', option: 'database',       value: 'mamonsu'}
-        - {section: 'postgres', option: 'query_timeout',  value: '60'}
-        - {section: 'zabbix',   option: 'address',        value: '{{ mamonsu_zabbix_server_ip }}'}
-        - {section: 'zabbix',   option: 'port',           value: '{{ mamonsu_zabbix_server_port | d(10051, true) }}'}
-        - {section: 'zabbix',   option: 'client',         value: '{{ inventory_hostname }}'}
-        - {section: 'log',      option: 'file',           value: '{{ mamonsu_log_file }}'}
-        - {section: 'plugins',  option: 'enabled',        value: 'True'}
-        - {section: 'pgbuffercache',  option: 'interval', value: '{{ mamonsu_interval_pgbuffercache | d(1200, true) }}'}
+        - {section: 'postgres',      option: 'user',              value: 'mamonsu'}
+        - {section: 'postgres',      option: 'database',          value: 'mamonsu'}
+        - {section: 'postgres',      option: 'query_timeout',     value: '60'}
+        - {section: 'zabbix',        option: 'address',           value: '{{ mamonsu_zabbix_server_ip }}'}
+        - {section: 'zabbix',        option: 'port',              value: '{{ mamonsu_zabbix_server_port | d(10051, true) }}'}
+        - {section: 'zabbix',        option: 'client',            value: '{{ inventory_hostname }}'}
+        - {section: 'log',           option: 'file',              value: '{{ mamonsu_log_path }}{{ mamonsu_log_file }}'}
+        - {section: 'plugins',       option: 'enabled',           value: 'True'}
+        - {section: 'pgbuffercache', option: 'interval',          value: '{{ mamonsu_interval_pgbuffercache | d(1200, true) }}'}
+        - {section: 'pgprobackup',   option: 'enabled',           value: '{{ mamonsu_pgprobackup_enable }}'}
+        - {section: 'pgprobackup',   option: 'backup_dirs',       value: '{{ mamonsu_pgprobackup_dirs }}'}
+        - {section: 'pgprobackup',   option: 'pg_probackup_path', value: '{{ mamonsu_pgprobackup_path }}'}
       loop_control:
         label: "{{ item.option }}"
+
+    - name: Install mamonsu | Copy systemd service file
+      template:
+        src: templates/mamonsu.service.j2
+        dest: /lib/systemd/system/mamonsu.service
+        owner: postgres
+        group: postgres
+        mode: 0644
+      notify: "restart mamonsu"
+
+    - name: Install mamonsu |  make sure log directory "{{ mamonsu_log_path }}" exists
+      file:
+        path: "{{ mamonsu_log_path }}"
+        owner: postgres
+        group: postgres
+        state: directory
+        mode: 0700
 
     - name: Install mamonsu | Copy mamonsu plugin
       template:
