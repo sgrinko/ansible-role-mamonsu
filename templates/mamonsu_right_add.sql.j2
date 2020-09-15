@@ -5,7 +5,7 @@ select not pg_is_in_recovery() as is_master \gset
     select '''' || case when current_setting('shared_buffers') like '%GB'
                         then (replace(current_setting('shared_buffers'), 'GB', '')::int)*1024
                         else replace(current_setting('shared_buffers'), 'MB', '')::int
-                   end * 0.0122 || ' MB''' as highpage_mb \gset
+                   end * 0.0117 || ' MB''' as highpage_mb \gset
     ALTER FUNCTION public.mamonsu_buffer_cache() SET WORK_MEM = :highpage_mb; -- for shared_buffers 16 Гб 200 Мб
   \endif
   -- we give the right to connect for the role of mamonsu
