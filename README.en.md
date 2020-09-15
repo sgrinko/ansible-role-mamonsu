@@ -22,15 +22,21 @@ proxy_env:
   https_proxy: http://10.128.64.9:3128
 ```
 ###### optional variable:
-`mamonsu_plugin_pg_stat_replication` - true if need install addon plugin pg_stat_replication. Default: true
+`mamonsu_plugin_pg_stat_replication` - true if need install addon plugin pg_stat_replication. Default: `true`
 
-`mamonsu_zabbix_server_port` - port zabbix server. Default: 10051
+`mamonsu_zabbix_server_port` - port zabbix server. Default: `10051`
 
-`mamonsu_interval_pgbuffercache` -  set interval call for plugin pg_buffercache.py in seconds. Default: 1200
+`mamonsu_interval_pgbuffercache` -  set interval call for plugin pg_buffercache.py in seconds. Default: `1200`
 
-`mamonsu_log_file` - path and name log file. Default: /var/log/mamonsu/agent.log
+`mamonsu_log_file` - path and name log file. Default: `/var/log/mamonsu/agent.log`
 
-`postgresql_port` - Port for access to PostgreSQL service. Default: 5432
+`postgresql_port` - Port for access to PostgreSQL service. Default: `5432`
+
+`mamonsu_pgprobackup_enable` -  (default) or true if you need to enable plugin pgprobackup. Default: `False`
+
+`mamonsu_pgprobackup_dirs` - dirs for check size: /mnt/pgbak. Default: `"/mnt/pgbak"`
+
+`mamonsu_pgprobackup_path` - full path name for utility `pg_probackup`. Default: `"/usr/bin/pg_probackup-12"`  
 
 See the defaults/[main.yml](./defaults/main.yml) file for details.
 

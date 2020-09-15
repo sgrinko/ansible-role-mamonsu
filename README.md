@@ -22,15 +22,21 @@ proxy_env:
   https_proxy: http://10.128.64.9:3128
 ```
 ###### необязательные переменные:
-`mamonsu_plugin_pg_stat_replication` - true если необходимо установить дополнительный пользовательский плагин pg_stat_replication. По умолчанию: true
+`mamonsu_plugin_pg_stat_replication` - true если необходимо установить дополнительный пользовательский плагин pg_stat_replication. По умолчанию: `true`
 
-`mamonsu_zabbix_server_port` - порт сервера zabbix. По умолчанию: 10051
+`mamonsu_zabbix_server_port` - порт сервера zabbix. По умолчанию: `10051`
 
-`mamonsu_interval_pgbuffercache` -  устанавливает интервал между вызовами плагина pg_buffercache.py в секундах. По умолчанию: 1200
+`mamonsu_interval_pgbuffercache` -  устанавливает интервал между вызовами плагина `pg_buffercache.py` в секундах. По умолчанию: `1200`
 
-`mamonsu_log_file` - путь и имя хранения лог файла. По умолчанию: /var/log/mamonsu/agent.log
+`mamonsu_log_file` - путь и имя хранения лог файла. По умолчанию: `/var/log/mamonsu/agent.log`
 
-`postgresql_port` - порт для доступа к PostgreSQL службе. По умолчанию: 5432
+`postgresql_port` - порт для доступа к PostgreSQL службе. По умолчанию: `5432`
+
+`mamonsu_pgprobackup_enable` - false или true если необходимо активировать плагин pgprobackup. По умолчанию: `False`
+
+`mamonsu_pgprobackup_dirs` -  список каталогов через запятую для контроля за их размером. По умолчанию: `"/mnt/pgbak"`
+
+`mamonsu_pgprobackup_path` - полный путь и имя утилиты `pg_probackup`. По умолчанию: `"/usr/bin/pg_probackup-12"`   
 
 Смотрите файл defaults/[main.yml](./defaults/main.yml) для подробностей.
 
