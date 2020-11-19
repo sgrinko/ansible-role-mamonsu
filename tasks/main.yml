@@ -102,6 +102,11 @@
         mode: 0644
       notify: "restart mamonsu"
 
+    - name: Install mamonsu |  delete log directory "{{ mamonsu_log_path }}" if exists
+      file:
+        path: "{{ mamonsu_log_path }}"
+        state: absent
+
     - name: Install mamonsu |  make sure log directory "{{ mamonsu_log_path }}" exists
       file:
         path: "{{ mamonsu_log_path }}"
