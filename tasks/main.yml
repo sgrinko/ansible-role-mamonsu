@@ -105,8 +105,8 @@
     - name: Install mamonsu |  make sure log directory "{{ mamonsu_log_path }}" exists
       file:
         path: "{{ mamonsu_log_path }}"
-        owner: {{ mamonsu_service_user }}
-        group: {{ mamonsu_service_user }}
+        owner: "{{ mamonsu_service_user }}"
+        group: "{{ mamonsu_service_user }}"
         state: directory
         mode: 0700
 
