@@ -16,8 +16,8 @@ After=network.target
 Type=simple
 RemainAfterExit=yes
 KillMode=process
-User=postgres
-Group=postgres
+User={{ mamonsu_serviceuser }}
+Group={{ mamonsu_serviceuser }}
 RuntimeDirectory=mamonsu
 # Path to the init file
 Environment=CONF=/etc/mamonsu/agent.conf

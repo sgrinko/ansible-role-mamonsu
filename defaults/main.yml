@@ -10,6 +10,7 @@ postgresql_port: 5432
 # -------------------------------------------
 # to set up mamonsu monitoring
 mamonsu_install: true                                # true if you need to configure mamonsu
+mamonsu_service_user: "mamonsu"                      # user under which you want to start the service. For example a custom postgres may be required when using some plugins
 mamonsu_zabbix_server_ip: "zabbix.server.ru"         # IP zabbix server
 mamonsu_zabbix_server_port: "10051"                  # port zabbix server
 mamonsu_interval_pgbuffercache: 1200                 # set interval call for plugin pg_buffercache.py

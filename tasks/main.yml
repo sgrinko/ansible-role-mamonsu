@@ -61,7 +61,7 @@
               compress
               missingok
               notifempty
-              create 0640 postgres postgres
+              create 0640 {{ mamonsu_service_user }} {{ mamonsu_service_user }}
               sharedscripts
               postrotate
                   [ -e /var/run/mamonsu/mamonsu.pid ] && /etc/init.d/mamonsu restart >/dev/null
@@ -97,16 +97,16 @@
       template:
         src: templates/mamonsu.service.j2
         dest: /lib/systemd/system/mamonsu.service
-        owner: postgres
-        group: postgres
+        owner: root
+        group: root
         mode: 0644
       notify: "restart mamonsu"
 
     - name: Install mamonsu |  make sure log directory "{{ mamonsu_log_path }}" exists
       file:
         path: "{{ mamonsu_log_path }}"
-        owner: postgres
-        group: postgres
+        owner: {{ mamonsu_service_user }}
+        group: {{ mamonsu_service_user }}
         state: directory
         mode: 0700
 

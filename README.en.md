@@ -12,6 +12,8 @@ mamonsu is written on Python language and distributed as a deb or rpm package.
 ## Role Variables
 `mamonsu_install` - true if need install mamonsu
 
+`mamonsu_service_user` - user under which you want to start the service. For example a custom postgres may be required when using some plugins
+
 `mamonsu_zabbix_server_ip` - IP zabbix server. Example: zabbix.server.ru
 
 `proxy_env` - use proxy server to download mamonsu packages (if required).
