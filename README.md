@@ -5,7 +5,7 @@
 Установка [mamonsu](https://github.com/postgrespro/mamonsu) (активный агент мониторинга для PostgreSQL) с использованием Ansible.
 
 ## Совместимость
-Все x86-64 Linux дситрибутивы.
+Все x86-64 Linux дистрибутивы.
 
 mamonsu написан на языке Python и распространяется в виде deb или rpm пакета.
 
