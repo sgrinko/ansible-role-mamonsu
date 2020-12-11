@@ -99,7 +99,6 @@
         - {section: 'memoryleakdiagnostic', option: 'private_anon_mem_threshold', value: '{{ mamonsu_memoryleakdiagnostic_anonmem }}'}
         - {section: 'relationssize',        option: 'enabled',                    value: '{{ mamonsu_relationssize_enable }}'}
         - {section: 'relationssize',        option: 'relations',                  value: '{{ mamonsu_relationssize_list }}'}
-        
       loop_control:
         label: "{{ item.option }}"
 
