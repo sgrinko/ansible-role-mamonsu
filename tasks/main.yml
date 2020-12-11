@@ -27,6 +27,11 @@
       when: ansible_os_family == "RedHat" and
             ansible_distribution_major_version == '7'
 
+    - name: Install mamonsu | delete conf directory if exists
+      file:
+        path: "/etc/mamonsu/"
+        state: absent
+
     - name: Install mamonsu | install package # noqa 403
       package:
         name: mamonsu
@@ -78,18 +83,23 @@
         value: "{{ item.value }}"
         mode: 0644
       loop:
-        - {section: 'postgres',      option: 'user',              value: 'mamonsu'}
-        - {section: 'postgres',      option: 'database',          value: 'mamonsu'}
-        - {section: 'postgres',      option: 'query_timeout',     value: '60'}
-        - {section: 'zabbix',        option: 'address',           value: '{{ mamonsu_zabbix_server_ip }}'}
-        - {section: 'zabbix',        option: 'port',              value: '{{ mamonsu_zabbix_server_port | d(10051, true) }}'}
-        - {section: 'zabbix',        option: 'client',            value: '{{ inventory_hostname }}'}
-        - {section: 'log',           option: 'file',              value: '{{ mamonsu_log_path }}{{ mamonsu_log_file }}'}
-        - {section: 'plugins',       option: 'enabled',           value: 'True'}
-        - {section: 'pgbuffercache', option: 'interval',          value: '{{ mamonsu_interval_pgbuffercache | d(1200, true) }}'}
-        - {section: 'pgprobackup',   option: 'enabled',           value: '{{ mamonsu_pgprobackup_enable }}'}
-        - {section: 'pgprobackup',   option: 'backup_dirs',       value: '{{ mamonsu_pgprobackup_dirs }}'}
-        - {section: 'pgprobackup',   option: 'pg_probackup_path', value: '{{ mamonsu_pgprobackup_path }}'}
+        - {section: 'postgres',             option: 'user',                       value: 'mamonsu'}
+        - {section: 'postgres',             option: 'database',                   value: 'mamonsu'}
+        - {section: 'postgres',             option: 'query_timeout',              value: '60'}
+        - {section: 'zabbix',               option: 'address',                    value: '{{ mamonsu_zabbix_server_ip }}'}
+        - {section: 'zabbix',               option: 'port',                       value: '{{ mamonsu_zabbix_server_port | d(10051, true) }}'}
+        - {section: 'zabbix',               option: 'client',                     value: '{{ inventory_hostname }}'}
+        - {section: 'log',                  option: 'file',                       value: '{{ mamonsu_log_path }}{{ mamonsu_log_file }}'}
+        - {section: 'plugins',              option: 'enabled',                    value: 'True'}
+        - {section: 'pgbuffercache',        option: 'interval',                   value: '{{ mamonsu_interval_pgbuffercache | d(1200, true) }}'}
+        - {section: 'pgprobackup',          option: 'enabled',                    value: '{{ mamonsu_pgprobackup_enable }}'}
+        - {section: 'pgprobackup',          option: 'backup_dirs',                value: '{{ mamonsu_pgprobackup_dirs }}'}
+        - {section: 'pgprobackup',          option: 'pg_probackup_path',          value: '{{ mamonsu_pgprobackup_path }}'}
+        - {section: 'memoryleakdiagnostic', option: 'enabled',                    value: '{{ mamonsu_memoryleakdiagnostic_enable }}'}
+        - {section: 'memoryleakdiagnostic', option: 'private_anon_mem_threshold', value: '{{ mamonsu_memoryleakdiagnostic_anonmem }}'}
+        - {section: 'relationssize',        option: 'enabled',                    value: '{{ mamonsu_relationssize_enable }}'}
+        - {section: 'relationssize',        option: 'relations',                  value: '{{ mamonsu_relationssize_list }}'}
+        
       loop_control:
         label: "{{ item.option }}"
 

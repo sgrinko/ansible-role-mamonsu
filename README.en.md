@@ -40,6 +40,16 @@ proxy_env:
 
 `mamonsu_pgprobackup_path` - full path name for utility `pg_probackup`. Default: `"/usr/bin/pg_probackup-12"`  
 
+`mamonsu_memoryleakdiagnostic_enable` - true if you need to enable plugin memoryleakdiagnostic. Default `True`
+ 
+`mamonsu_memoryleakdiagnostic_anonmem` - memory volume threshold after which we need an investigation about memory leak. Default `1GB`
+ 
+`mamonsu_relationssize_enable` - true if you need to enable plugin relationssize. Default `False`
+ 
+`mamonsu_relationssize_list` - Relations - comma separated list of objects - tables and indexes (database_name.schema.relation) used to calculate relations size. 
+Sample: `postgres.pg_catalog.pg_class,postgres.pg_catalog.pg_user`
+
+
 See the defaults/[main.yml](./defaults/main.yml) file for details.
 
 ## Dependencies

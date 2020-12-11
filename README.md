@@ -40,6 +40,15 @@ proxy_env:
 
 `mamonsu_pgprobackup_path` - полный путь и имя утилиты `pg_probackup`. По умолчанию: `"/usr/bin/pg_probackup-12"`   
 
+`mamonsu_memoryleakdiagnostic_enable` - true если необходимо включить плагин memoryleakdiagnostic. По умолчанию: `True`
+ 
+`mamonsu_memoryleakdiagnostic_anonmem` - порог объема памяти, после которого необходимо провести расследование на предмет утечки памяти. По умолчанию: `1GB`
+ 
+`mamonsu_relationssize_enable` - true если необходимо включить плагин relationssize. По умолчанию: `False`
+ 
+`mamonsu_relationssize_list` - Таблицы - разделенный запятыми список объектов - таблиц и индексов (database_name.schema.relation), используемых для расчета размера отношений. 
+Пример: `postgres.pg_catalog.pg_class,postgres.pg_catalog.pg_user`
+
 Смотрите файл defaults/[main.yml](./defaults/main.yml) для подробностей.
 
 ## Зависимости

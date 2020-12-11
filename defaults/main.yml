@@ -19,4 +19,8 @@ mamonsu_log_file: "agent.log"                        # name log file
 mamonsu_plugin_pg_stat_replication: true             # true if need install plugin pg_stat_replication
 mamonsu_pgprobackup_enable: "False"                  # true if you need to enable plugin pgprobackup
 mamonsu_pgprobackup_dirs: "/mnt/pgbak"               # dirs for check size: /mnt/pgbak
-mamonsu_pgprobackup_path: "/usr/bin/pg_probackup-12" # full path name for utility pg_probackup  
+mamonsu_pgprobackup_path: "/usr/bin/pg_probackup-12" # full path name for utility pg_probackup
+mamonsu_memoryleakdiagnostic_enable: "True"          # true if you need to enable plugin memoryleakdiagnostic
+mamonsu_memoryleakdiagnostic_anonmem: "1GB"          # memory volume threshold after which we need an investigation about memory leak. 1GB by default.
+mamonsu_relationssize_enable: "False"                # true if you need to enable plugin relationssize
+mamonsu_relationssize_list: "postgres.pg_catalog.pg_class,postgres.pg_catalog.pg_user"   # Relations - comma separated list of objects - tables and indexes (database_name.schema.relation) used to calculate relations size.
