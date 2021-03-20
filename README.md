@@ -42,7 +42,7 @@ proxy_env:
 
 `mamonsu_memoryleakdiagnostic_enable` - true если необходимо включить плагин memoryleakdiagnostic. По умолчанию: `True`
  
-`mamonsu_memoryleakdiagnostic_anonmem` - порог объема памяти, после которого необходимо провести расследование на предмет утечки памяти. По умолчанию: `1GB`
+`mamonsu_memoryleakdiagnostic_anonmem` - порог объема памяти, после которого необходимо провести расследование на предмет утечки памяти. По умолчанию: `4GB`
  
 `mamonsu_relationssize_enable` - true если необходимо включить плагин relationssize. По умолчанию: `False`
  

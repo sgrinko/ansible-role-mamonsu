@@ -42,7 +42,7 @@ proxy_env:
 
 `mamonsu_memoryleakdiagnostic_enable` - true if you need to enable plugin memoryleakdiagnostic. Default `True`
  
-`mamonsu_memoryleakdiagnostic_anonmem` - memory volume threshold after which we need an investigation about memory leak. Default `1GB`
+`mamonsu_memoryleakdiagnostic_anonmem` - memory volume threshold after which we need an investigation about memory leak. Default `4GB`
  
 `mamonsu_relationssize_enable` - true if you need to enable plugin relationssize. Default `False`
  
