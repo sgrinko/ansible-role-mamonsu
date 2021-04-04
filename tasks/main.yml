@@ -123,7 +123,7 @@
         group: "{{ mamonsu_service_user }}"
         state: directory
         mode: 0700
-        
+
     - name: Install mamonsu | Create plugins directory
       file:
         path: "/etc/mamonsu/plugins"
