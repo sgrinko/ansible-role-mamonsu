@@ -23,8 +23,13 @@ proxy_env:
   http_proxy: http://10.128.64.9:3128
   https_proxy: http://10.128.64.9:3128
 ```
+
+`postgresql_bin_dir` - Full way to access bin files PSQL. It is necessary to correctly set before launching the script
+
 ###### optional variable:
 `mamonsu_plugin_pg_stat_replication` - true if need install addon plugin pg_stat_replication. Default: `true`
+
+`mamonsu_plugin_pg_stat_partition` - true if need install addon plugin pg_partition. Default: `true`
 
 `mamonsu_zabbix_server_port` - port zabbix server. Default: `10051`
 

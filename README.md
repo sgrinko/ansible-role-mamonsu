@@ -23,8 +23,13 @@ proxy_env:
   http_proxy: http://10.128.64.9:3128
   https_proxy: http://10.128.64.9:3128
 ```
+
+`postgresql_bin_dir` - полный путь для доступа к bin файлам psql. Необходимо корректно задать перед запуском скрипта
+
 ###### необязательные переменные:
 `mamonsu_plugin_pg_stat_replication` - true если необходимо установить дополнительный пользовательский плагин pg_stat_replication. По умолчанию: `true`
+
+`mamonsu_plugin_pg_stat_partition` - true если необходимо установить дополнительный пользовательский плагин pg_partition. По умолчанию: `true`
 
 `mamonsu_zabbix_server_port` - порт сервера zabbix. По умолчанию: `10051`
 
