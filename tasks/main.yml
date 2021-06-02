@@ -29,7 +29,7 @@
 
     - name: Install mamonsu | delete conf directory if exists
       file:
-        path: "/etc/mamonsu/"
+        path: "/etc/mamonsu"
         state: absent
 
     - name: Install mamonsu | install package # noqa 403
@@ -74,6 +74,20 @@
           }
         mode: 0644
         dest: /etc/logrotate.d/mamonsu
+    
+    - name: Install mamonsu | Create conf directory
+      file:
+        path: "/etc/mamonsu"
+        state: directory
+        mode: 0755
+
+    - name: Install mamonsu | Create default agent.conf file
+      copy:
+        src: agent.conf
+        dest: /etc/mamonsu/agent.conf
+        owner: root
+        group: root
+        mode: 0644
 
     - name: Install mamonsu | Prepare agent.conf file (replace "user","database","query_timeout", "address",...) # noqa 305
       ini_file:
@@ -104,7 +118,7 @@
 
     - name: Install mamonsu | Copy systemd service file
       template:
-        src: templates/mamonsu.service.j2
+        src: mamonsu.service.j2
         dest: /lib/systemd/system/mamonsu.service
         owner: root
         group: root
@@ -130,12 +144,19 @@
         state: directory
         mode: 0755
 
-    - name: Install mamonsu | Copy mamonsu plugin
+    - name: Install mamonsu | Copy mamonsu plugin pg_stat_replication.py
       template:
-        src: templates/pg_stat_replication.py.j2
+        src: pg_stat_replication.py.j2
         dest: /etc/mamonsu/plugins/pg_stat_replication.py
         mode: 0644
       when: mamonsu_plugin_pg_stat_replication|d(true,true)|bool
+
+    - name: Install mamonsu | Copy mamonsu plugin pg_partition.py
+      template:
+        src: pg_partition.py.j2
+        dest: /etc/mamonsu/plugins/pg_partition.py
+        mode: 0644
+      when: mamonsu_plugin_pg_partition|d(true,true)|bool
 
     - name: Create "~postgres/mamonsu_setup.sql"  # yamllint disable rule:line-length
       copy:
@@ -154,7 +175,7 @@
     - name: Install mamonsu | Setup bootstrap mamonsu - RECREATE DATABASE IF EXISTS mamonsu
       become: true
       become_user: postgres
-      command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_setup.sql postgres"
+      command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_setup.sql postgres"
 
     - name: Install mamonsu | Create "~postgres/mamonsu_db_genallrun.sql"  # yamllint disable rule:line-length
       copy:
@@ -184,7 +205,7 @@
 
     - name: Install mamonsu | Copy mamonsu setup DB files to server
       template:
-        src: templates/mamonsu_right_add.sql.j2
+        src: mamonsu_right_add.sql.j2
         dest: ~postgres/mamonsu_right_add.sql
         owner: postgres
         group: postgres
@@ -193,25 +214,33 @@
     - name: Install mamonsu | Setup bootstrap mamonsu - add rights to DB
       become: true
       become_user: postgres
-      command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_user_add.sql postgres"
+      command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_user_add.sql postgres"
+
+    - name: Install mamonsu | Create extension pg_buffercache on database mamonsu
+      become: true
+      become_user: postgres
+      shell: |
+        if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
+          {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -U postgres -d mamonsu -c 'CREATE EXTENSION IF NOT EXISTS pg_buffercache SCHEMA public;'
+        fi
 
     - name: Install mamonsu | Setup bootstrap mamonsu - create environment # noqa 305
       become: true
       become_user: postgres
       shell: |
-        if psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
+        if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
           mamonsu bootstrap -M mamonsu -U postgres -d mamonsu --port={{ postgresql_port|d(5432,true) }} ;
         fi
 
     - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (generate script)
       become: true
       become_user: postgres
-      command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres"
+      command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres"
 
     - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (run script)
       become: true
       become_user: postgres
-      command: "psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun_out.sql postgres"
+      command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun_out.sql postgres"
       notify: "restart mamonsu"
 
   environment: "{{ proxy_env | default({}) }}"

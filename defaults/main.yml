@@ -7,6 +7,10 @@ proxy_env: {}
 # Port for access to PostgreSQL service
 postgresql_port: 5432
 
+# Binary path to actual psql
+postgresql_bin_dir: "/usr/pgsql-13/bin" # RedHat/CentOS
+#postgresql_bin_dir: "/usr/lib/postgresql/13/bin" # Debian/Ubuntu
+
 # -------------------------------------------
 # to set up mamonsu monitoring
 mamonsu_install: true                                # true if you need to configure mamonsu
@@ -17,9 +21,10 @@ mamonsu_interval_pgbuffercache: 1200                 # set interval call for plu
 mamonsu_log_path: "/var/log/mamonsu/"                # path name for log file 
 mamonsu_log_file: "agent.log"                        # name log file 
 mamonsu_plugin_pg_stat_replication: true             # true if need install plugin pg_stat_replication
+mamonsu_plugin_pg_partition: true                    # true if need install plugin pg_partition
 mamonsu_pgprobackup_enable: "False"                  # true if you need to enable plugin pgprobackup
 mamonsu_pgprobackup_dirs: "/mnt/pgbak"               # dirs for check size: /mnt/pgbak
-mamonsu_pgprobackup_path: "/usr/bin/pg_probackup-12" # full path name for utility pg_probackup
+mamonsu_pgprobackup_path: "/usr/bin/pg_probackup-13" # full path name for utility pg_probackup
 mamonsu_memoryleakdiagnostic_enable: "True"          # true if you need to enable plugin memoryleakdiagnostic
 mamonsu_memoryleakdiagnostic_anonmem: "4GB"          # memory volume threshold after which we need an investigation about memory leak. 4GB by default.
 mamonsu_relationssize_enable: "False"                # true if you need to enable plugin relationssize
