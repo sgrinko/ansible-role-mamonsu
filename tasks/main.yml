@@ -71,7 +71,7 @@
           }
         mode: 0644
         dest: /etc/logrotate.d/mamonsu
-    
+
     - name: Install mamonsu | Create conf directory
       file:
         path: "/etc/mamonsu"
