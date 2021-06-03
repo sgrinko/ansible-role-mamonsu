@@ -1,7 +1,4 @@
 ---
-# yamllint disable rule:line-length
-# yamllint disable rule:comments-indentation
-
 - block:  # mamonsu_install|bool
 
     # Debian/Ubuntu
@@ -220,22 +217,22 @@
       become: true
       become_user: postgres
       shell: |
-        if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
-          {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -U postgres -d mamonsu -c 'CREATE EXTENSION IF NOT EXISTS pg_buffercache SCHEMA public;'
+        if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then # noqa 204
+          {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -U postgres -d mamonsu -c 'CREATE EXTENSION IF NOT EXISTS pg_buffercache SCHEMA public;' # noqa 204
         fi
 
     - name: Install mamonsu | Setup bootstrap mamonsu - create environment # noqa 305
       become: true
       become_user: postgres
       shell: |
-        if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
+        if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then # noqa 204
           mamonsu bootstrap -M mamonsu -U postgres -d mamonsu --port={{ postgresql_port|d(5432,true) }} ;
         fi
 
     - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (generate script)
       become: true
       become_user: postgres
-      command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres"
+      command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres" # noqa 204
 
     - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (run script)
       become: true
