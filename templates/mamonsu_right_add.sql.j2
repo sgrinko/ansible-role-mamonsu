@@ -7,6 +7,21 @@ select not pg_is_in_recovery() as is_master \gset
                         else replace(current_setting('shared_buffers'), 'MB', '')::int
                    end * 0.0117 || ' MB''' as highpage_mb \gset
     ALTER FUNCTION public.mamonsu_buffer_cache() SET WORK_MEM = :highpage_mb; -- for shared_buffers 16 Гб 200 Мб
+    -- correct error for replay_lsn is null
+    CREATE OR REPLACE FUNCTION public.mamonsu_count_wal_lag_lsn()
+	  RETURNS TABLE(application_name text, flush_lag interval, replay_lag interval, write_lag interval, total_lag numeric) AS
+    $BODY$
+    SELECT 
+    CONCAT(application_name, ' ', pid) as application_name,
+    flush_lag, replay_lag, write_lag, coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn),0) AS total_lag
+    FROM pg_stat_replication
+    $BODY$
+      LANGUAGE sql VOLATILE SECURITY DEFINER
+    PARALLEL UNSAFE
+      COST 100
+      ROWS 1000;
+    GRANT EXECUTE ON FUNCTION public.mamonsu_count_wal_lag_lsn() TO pg_monitor;
+    GRANT EXECUTE ON FUNCTION public.mamonsu_count_wal_lag_lsn() TO mamonsu;
   \endif
   -- we give the right to connect for the role of mamonsu
   do $$ begin execute 'GRANT CONNECT ON DATABASE "' || current_database() || '" TO mamonsu; '; end $$;
