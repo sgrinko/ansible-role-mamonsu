@@ -64,7 +64,7 @@
       notify: "restart mamonsu"
       when: ansible_os_family == "RedHat"
 
-    - name: Install mamonsu | install package RHEL - correct pg_probackup.py plugin
+    - name: Install mamonsu | install package RHEL - correct const.py plugin
       template:
         src: const.py.j2
         dest: /usr/lib/python3.6/site-packages/mamonsu/lib/const.py
@@ -84,7 +84,7 @@
       notify: "restart mamonsu"
       when: ansible_os_family == "Debian"
 
-    - name: Install mamonsu | install package RHEL - correct pg_probackup.py plugin
+    - name: Install mamonsu | install package RHEL - correct const.py plugin
       template:
         src: const.py.j2
         dest: /usr/lib/python3/dist-packages/mamonsu/lib/const.py
