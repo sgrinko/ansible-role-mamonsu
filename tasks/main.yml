@@ -29,6 +29,7 @@
         path: "/etc/mamonsu"
         state: absent
 
+    # CentOS and Debian
     - name: Install mamonsu | install package # noqa 403
       package:
         name: mamonsu
@@ -52,6 +53,46 @@
         state: latest
       when: ansible_os_family == "RedHat" and
             ansible_distribution_major_version >= '8'
+
+    - name: Install mamonsu | install package RHEL - correct pg_probackup.py plugin
+      template:
+        src: pg_probackup.py.j2
+        dest: /usr/lib/python3.6/site-packages/mamonsu/plugins/system/linux/pg_probackup.py
+        owner: root
+        group: root
+        mode: 0644
+      notify: "restart mamonsu"
+      when: ansible_os_family == "RedHat"
+
+    - name: Install mamonsu | install package RHEL - correct pg_probackup.py plugin
+      template:
+        src: const.py.j2
+        dest: /usr/lib/python3.6/site-packages/mamonsu/lib/const.py
+        owner: root
+        group: root
+        mode: 0644
+      notify: "restart mamonsu"
+      when: ansible_os_family == "RedHat"
+
+    - name: Install mamonsu | install package RHEL - correct pg_probackup.py plugin
+      template:
+        src: pg_probackup.py.j2
+        dest: /usr/lib/python3/dist-packages/mamonsu/plugins/system/linux/pg_probackup.py
+        owner: root
+        group: root
+        mode: 0644
+      notify: "restart mamonsu"
+      when: ansible_os_family == "Debian"
+
+    - name: Install mamonsu | install package RHEL - correct pg_probackup.py plugin
+      template:
+        src: const.py.j2
+        dest: /usr/lib/python3/dist-packages/mamonsu/lib/const.py
+        owner: root
+        group: root
+        mode: 0644
+      notify: "restart mamonsu"
+      when: ansible_os_family == "Debian"
 
     # general installation steps ...
     - name: Install mamonsu | Enable log rotation with logrotate
