@@ -39,11 +39,11 @@ proxy_env:
 
 `postgresql_port` - Port for access to PostgreSQL service. Default: `5432`
 
-`mamonsu_pgprobackup_enable` -  (default) or true if you need to enable plugin pgprobackup. Default: `False`
+`mamonsu_pgprobackup_enable` -  (default) or true if you need to enable plugin pgprobackup. Default: `True`
 
 `mamonsu_pgprobackup_dirs` - dirs for check size: /mnt/pgbak. Default: `"/mnt/pgbak"`
 
-`mamonsu_pgprobackup_path` - full path name for utility `pg_probackup`. Default: `"/usr/bin/pg_probackup-12"`  
+`mamonsu_pgprobackup_path` - full path name for utility `pg_probackup`. Default: `"/usr/bin/pg_probackup-13"`
 
 `mamonsu_memoryleakdiagnostic_enable` - true if you need to enable plugin memoryleakdiagnostic. Default `True`
  
