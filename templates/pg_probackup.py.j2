@@ -144,7 +144,7 @@ class PgProbackup(Plugin):
                         start = datetime.strptime(backup['start-time'], fmt_data)
                         zbx.send(self.key_dir_starttime_backup.format('[' + _dir + ']'), start.timestamp())
                         # check end-time and calculate duration
-                        if backup['end-time'] is not None:
+                        if 'end-time' in backup:
                             end = datetime.strptime(backup['end-time'], fmt_data)
                             delta = (end - start).total_seconds()
                             # the end time of the last backup at unixtime 
@@ -155,7 +155,7 @@ class PgProbackup(Plugin):
                                 full_send = 1
                             else:
                                 zbx.send(self.key_dir_duration_inc.format('[' + _dir + ']'), delta)
-                    if full_send == 0 and backup['backup-mode'] == "FULL":
+                    if full_send == 0 and 'end-time' in backup and backup['backup-mode'] == "FULL":
                         start = datetime.strptime(backup['start-time'], fmt_data)
                         end = datetime.strptime(backup['end-time'], fmt_data)
                         delta = (end - start).total_seconds()
