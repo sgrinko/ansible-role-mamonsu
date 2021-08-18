@@ -39,11 +39,11 @@ proxy_env:
 
 `postgresql_port` - порт для доступа к PostgreSQL службе. По умолчанию: `5432`
 
-`mamonsu_pgprobackup_enable` - false или true если необходимо активировать плагин pgprobackup. По умолчанию: `True`
+`mamonsu_pgprobackup_enable` - false или true если необходимо активировать плагин pgprobackup. По умолчанию: `False`
 
 `mamonsu_pgprobackup_dirs` -  список каталогов через запятую для контроля за их размером. По умолчанию: `"/mnt/pgbak"`
 
-`mamonsu_pgprobackup_path` - полный путь и имя утилиты `pg_probackup`. По умолчанию: `"/usr/bin/pg_probackup-13"`   
+`mamonsu_pgprobackup_path` - полный путь и имя утилиты `pg_probackup`. По умолчанию: `"/usr/bin/pg_probackup-12"`   
 
 `mamonsu_memoryleakdiagnostic_enable` - true если необходимо включить плагин memoryleakdiagnostic. По умолчанию: `True`
  
