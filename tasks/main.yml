@@ -107,7 +107,11 @@
               create 0640 {{ mamonsu_service_user }} {{ mamonsu_service_user }}
               sharedscripts
               postrotate
-                  [ -e /var/run/mamonsu/mamonsu.pid ] && /etc/init.d/mamonsu restart >/dev/null
+                  if [ -d "/run/systemd/system" -a -x "/bin/systemctl" ]; then
+                      /bin/systemctl condrestart mamonsu >/dev/null
+                  else
+                      /etc/init.d/mamonsu condrestart >/dev/null
+                  fi
               endscript
           }
         mode: 0644
