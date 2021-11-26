@@ -7,10 +7,14 @@
 ## Совместимость
 Все x86-64 Linux дистрибутивы.
 
-mamonsu написан на языке Python и распространяется в виде deb или rpm пакета.
+mamonsu написан на языке Python и распространяется в виде deb или rpm пакета. Также можно установить из исходников с github.
 
 ## Переменные роли
 `mamonsu_install` - true если необходимо установить и настроить mamonsu
+
+`mamonsu_install_src` - true если необходимо установить mamonsu из исходников на github. По умолчанию: `true`
+
+`mamonsu_version` - версия mamonsu которую нужно установить
 
 `mamonsu_service_user` - пользователь под которым нужно стартовать службу. К примеру может потребоваться пользователь postgres когда используются некоторые плагины
 
@@ -27,8 +31,6 @@ proxy_env:
 `postgresql_bin_dir` - полный путь для доступа к bin файлам psql. Необходимо корректно задать перед запуском скрипта
 
 ###### необязательные переменные:
-`mamonsu_plugin_pg_stat_replication` - true если необходимо установить дополнительный пользовательский плагин pg_stat_replication. По умолчанию: `true`
-
 `mamonsu_plugin_pg_stat_partition` - true если необходимо установить дополнительный пользовательский плагин pg_partition. По умолчанию: `true`
 
 `mamonsu_zabbix_server_port` - порт сервера zabbix. По умолчанию: `10051`
@@ -43,7 +45,7 @@ proxy_env:
 
 `mamonsu_pgprobackup_dirs` -  список каталогов через запятую для контроля за их размером. По умолчанию: `"/mnt/pgbak"`
 
-`mamonsu_pgprobackup_path` - полный путь и имя утилиты `pg_probackup`. По умолчанию: `"/usr/bin/pg_probackup-12"`   
+`mamonsu_pgprobackup_path` - полный путь и имя утилиты `pg_probackup`. По умолчанию: `"/usr/bin/pg_probackup-12"`
 
 `mamonsu_memoryleakdiagnostic_enable` - true если необходимо включить плагин memoryleakdiagnostic. По умолчанию: `True`
  

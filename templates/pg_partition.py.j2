@@ -5,6 +5,7 @@ from mamonsu.plugins.pgsql.plugin import PgsqlPlugin as Plugin
 from mamonsu.plugins.pgsql.pool import Pooler
 
 class PgPartitionDefRows(Plugin):
+    Interval = 60*20
     query_agent_discovery = """WITH RECURSIVE inheritance_tree AS (
          SELECT c_1.oid AS table_oid,
             n.nspname AS table_schema,
@@ -80,7 +81,7 @@ ORDER BY it.table_parent_schema, it.table_parent_name, c.reltuples;"""
                 zbx.send(self.key_rel_part+'[{0}]'.format(table_name), info_rows[0])
         zbx.send(self.key_rel_part+'[]', zbx.json({'data': tables}))
 
-    def discovery_rules(self, template):
+    def discovery_rules(self, template, dashboard=False):
         rule = {
             'name': 'Rows in default partition discovery',
             'key': self.key_rel_part_discovery.format('[{0}]'.format(self.Macros[self.Type])),
