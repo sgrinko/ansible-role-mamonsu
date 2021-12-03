@@ -1,0 +1,192 @@
+{% raw %}
+# -*- coding: utf-8 -*-
+
+import psycopg2
+from typing import List
+from psycopg2.extras import DictCursor
+from mamonsu.plugins.pgsql.plugin import PgsqlPlugin as Plugin
+
+class PgbouncerMetricsCollector(Plugin):
+    # execute method run() every 1s
+    Interval = 1
+
+    conn = False
+    include_db = "publishing"
+    include_user = "publishing"
+    # port  size_pool  client_pool
+    #   0       1         2
+    ports = [
+        (6432,95,9000)
+    ]
+    # field, zbx_key, units, delta,  value_type, description
+    #   0       1       2      3         4            5     
+    metrics = [
+        ('cl_active',  'pgbouncer.pools', '', Plugin.DELTA.as_is, Plugin.VALUE_TYPE.numeric_unsigned, 'Active client connections'),
+        ('cl_waiting', 'pgbouncer.pools', '', Plugin.DELTA.as_is, Plugin.VALUE_TYPE.numeric_unsigned, 'Client connections waiting to connect to server'),
+        ('maxwait',    'pgbouncer.pools', 'sec', Plugin.DELTA.as_is, Plugin.VALUE_TYPE.numeric_unsigned, 'Waiting Queue in Seconds'),
+        ('sv_active',  'pgbouncer.pools', '', Plugin.DELTA.as_is, Plugin.VALUE_TYPE.numeric_unsigned, 'Active server connections'),
+        ('sv_idle',    'pgbouncer.pools', '', Plugin.DELTA.as_is, Plugin.VALUE_TYPE.numeric_unsigned, 'Idle server connections'),
+        ('sv_used',    'pgbouncer.pools', '', Plugin.DELTA.as_is, Plugin.VALUE_TYPE.numeric_unsigned, 'Idle > server_check_delay'),
+        ('sv_tested',  'pgbouncer.pools', '', Plugin.DELTA.as_is, Plugin.VALUE_TYPE.numeric_unsigned, 'Checked server connections'),
+        ('sv_login',   'pgbouncer.pools', '', Plugin.DELTA.as_is, Plugin.VALUE_TYPE.numeric_unsigned, 'Server connections in the authorization process'),
+    ]
+
+#    metrics = [
+#        ('cl_active',  'pgbouncer.pools', 'n/m', Plugin.DELTA.simple_change, Plugin.VALUE_TYPE.numeric_unsigned, u'Активные клиентские соединения'),
+#        ('cl_waiting', 'pgbouncer.pools', 'n/m', Plugin.DELTA.simple_change, Plugin.VALUE_TYPE.numeric_unsigned, u'Клиентские подключения ожидающие подключение к серверу'),
+#        ('sv_active',  'pgbouncer.pools', 'n/m', Plugin.DELTA.simple_change, Plugin.VALUE_TYPE.numeric_unsigned, u'Активные серверные соединения'),
+#        ('sv_idle',    'pgbouncer.pools', 'n/m', Plugin.DELTA.simple_change, Plugin.VALUE_TYPE.numeric_unsigned, u'Ожидающие серверные соединения'),
+#        ('sv_used',    'pgbouncer.pools', 'n/m', Plugin.DELTA.simple_change, Plugin.VALUE_TYPE.numeric_unsigned, u'Давно не использующиеся серверные соединения'),
+#        ('sv_tested',  'pgbouncer.pools', 'n/m', Plugin.DELTA.simple_change, Plugin.VALUE_TYPE.numeric_unsigned, u'Проверяемые серверные соединения'),
+#        ('sv_login',   'pgbouncer.pools', 'n/m', Plugin.DELTA.simple_change, Plugin.VALUE_TYPE.numeric_unsigned, u'Серверные соединения в процессе авторизации'),
+#        ('maxwait',    'pgbouncer.pools', 'n/m', Plugin.DELTA.simple_change, Plugin.VALUE_TYPE.numeric_unsigned, u'Очередь ожидания в секундах')
+#    ]
+
+    # name, type, ('graph_key', 'graph item', color, yaxisside, drawtype, function)
+    #   0     1         2.0           2.1       2.2      2.3      2.4      2.5
+    Graphs = [
+        ('pgbouncer pool (client)', 0, (('pgbouncer.pools','cl_active',  'FF0000', 0, 5, 3),
+                                        ('pgbouncer.pools','cl_waiting', '000000', 0, 5, 3),
+                                        ('pgbouncer.pools','maxwait',    '0040FF', 1, 5, 3),
+                                       ),),
+        ('pgbouncer pool (server)', 0, (('pgbouncer.pools','sv_idle',    '009900', 0, 5, 2),
+                                        ('pgbouncer.pools','sv_used',    'FFFF00', 0, 5, 3),
+                                        ('pgbouncer.pools','sv_tested',  '0040FF', 0, 5, 3),
+                                        ('pgbouncer.pools','sv_login',   'FFBF00', 0, 5, 3),
+                                        ('pgbouncer.pools','sv_active',  'FF0000', 0, 5, 3),
+                                       ),),
+    ]
+
+    def run(self, zbx):
+        for idx, port in enumerate(self.ports):
+            self._run_port(zbx, port[0])
+
+    def _run_port(self, zbx, port):
+        # Connect to pgbouncer
+        conn = self._createConnection(port)
+
+        # execute query on default database
+        result = self._fetchMetrics(conn, "SHOW POOLS;")
+        if result:
+            # send a resulting value to zabbix
+            for idx, item in enumerate(self.metrics):
+                fld, zbxkey, delta, val = item[0], item[1], item[3], None
+                for row in result:
+                    if not row["database"].startswith(self.include_db):
+                        continue
+                    if not row["user"].startswith(self.include_user):
+                        continue
+                    if not fld in row:
+                        continue
+                    if val is None:
+                        val = 0
+                    val = val + row[fld]
+                if val is not None:
+                    if item[4] == Plugin.VALUE_TYPE.numeric_float:
+                        zbx.send('{0}.{2}.[{1}]'.format(zbxkey, fld, port), float(val), delta)
+                        #self.log.info('{0}.{2}.[{1}] '.format(zbxkey, fld, port) + str(val))
+                    else:
+                        zbx.send('{0}.{2}.[{1}]'.format(zbxkey, fld, port), int(val), delta)
+                        #self.log.info('{0}.{2}.[{1}] '.format(zbxkey, fld, port) + str(val))
+
+    # Declare zabbix items for template
+    def items(self, template):
+        result = ''
+        for idx, port in enumerate(self.ports):
+            result += self._items_port(template, port[0])
+        return result
+
+    def _items_port(self, template, port):
+        result = ''
+        for idx, item in enumerate(self.metrics):
+            key, zbxkey = item[0], item[1]
+            result += template.item({
+                'name': 'pgbouncer: {0}'.format(item[5]),
+                'key': zbxkey + ('.{1}.[{0}]'.format(key, port)),
+                'units': item[2],
+                'value_type': item[4]
+            })
+        return result
+
+    # Declare zabbix graphs for template
+    def graphs(self, template):
+        result = ''
+        for idx, port in enumerate(self.ports):
+            result += self._graphs_port(template, port[0])
+        return result
+
+    def _graphs_port(self, template, port):
+        result = ''
+        for name in self.Graphs:
+            items = []
+            for idx, item in enumerate(name[2]):
+                zbxkey, zbxitem = item[0],item[1]
+                if item[4] is None:
+                    items.append({
+                        'key': '{0}.{2}.[{1}]'.format(zbxkey,zbxitem,port),
+                        'color': item[2],
+                        'yaxisside': item[3],
+                        'calc_fnc': item[5],
+                        'sortorder': idx
+                    })
+                else:
+                    items.append({
+                        'key': '{0}.{2}.[{1}]'.format(zbxkey,zbxitem,port),
+                        'color': item[2],
+                        'yaxisside': item[3],
+                        'drawtype': item[4],
+                        'calc_fnc': item[5],
+                        'sortorder': idx
+                    })
+            graph = {'name': '{0}.{1}'.format(name[0],port), 'items': items, 'type': name[1]}
+            result += template.graph(graph)
+        return result
+
+    def triggers(self, template):
+        result = ''
+        for idx, port in enumerate(self.ports):
+            result += self._triggers_port(template, port[0], port[1], port[2])
+        return result
+
+    def _triggers_port(self, template, port, server_pool, client_pool):
+        result = template.trigger({
+            'name': 'PgBouncer close to server pool ' + str(port) + ' exhaustion on {HOSTNAME}',
+            'expression': '{#TEMPLATE:pgbouncer.pools.' + str(port) + '.[sv_active]'+'.last()}&gt;' + str(server_pool-1)
+        })
+        result += template.trigger({
+            'name': 'PgBouncer close to client pool ' + str(port) + ' exhaustion on {HOSTNAME}',
+            'expression': '{#TEMPLATE:pgbouncer.pools.' + str(port) + '.[cl_active]'+'.last()}&gt;' + str(int(client_pool*0.9))
+        })
+        return result
+
+    def _fetchMetrics(self, conn, query):
+        cursor = False
+
+        try:
+            # Open a cursor
+            cursor = conn.cursor(cursor_factory=DictCursor)
+
+            # Fetch statistics
+            cursor.execute(query)
+            cols = [col.name for col in cursor.description]
+            rows = cursor.fetchall()
+            result = []
+            for row in rows:
+                row_dict = dict(zip(cols, row))
+                result.append(row_dict)
+            return result
+
+        except Exception as error:
+            self.log.info("Unable run query {query}".format(query=query))
+
+            return False
+        finally:
+            if cursor:
+                cursor.close()
+
+    def _createConnection(self, port):
+        conn = psycopg2.connect(dbname="pgbouncer", user="pgbouncer", port=port)
+        conn.set_session(autocommit=True)
+
+        return conn
+{% endraw %}
