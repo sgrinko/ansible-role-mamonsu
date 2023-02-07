@@ -7,31 +7,35 @@ proxy_env: {}
 # Port for access to PostgreSQL service
 postgresql_port: 5432
 
-# Binary path to actual psql
-postgresql_bin_dir: "/usr/pgsql-13/bin" # RedHat/CentOS
-#postgresql_bin_dir: "/usr/lib/postgresql/13/bin" # Debian/Ubuntu
+postgresql_vendor: 'vanilla'
+postgresql_version: 15
 
+
+postgresql_suffix: "{% if ansible_os_family == 'Debian' %}postgresql/{{ postgresql_version }}{% else %}pgsql-{{ postgresql_version }}{% endif %}"
+
+# Binary path to actual psql for Vanilla
+postgresql_bin_dir: "{% if postgresql_vendor == 'vanilla' %}/usr/{{ postgresql_suffix }}/bin{% elif postgresql_vendor == 'pgpro_std' %}/opt/pgpro/std-{{ postgresql_version }}/bin{% endif %}"
 # Path to actual home dir
-postgresql_home_dir: "/var/lib/pgsql"
-#postgresql_home_dir: "/var/lib/postgresql"
+postgresql_home_dir: "{% if ansible_os_family == 'Debian' %}/var/lib/postgresql{% elif (ansible_os_family == 'RedHat' or ansible_os_family == 'RED') %}/var/lib/pgsql{% endif %}"
 
-mamonsu_version: "3.2.0"
+mamonsu_pgprobackup_path: "{% if postgresql_vendor == 'vanilla' %}/usr/bin/pg_probackup-{{ postgresql_version }}{% elif postgresql_vendor == 'pgpro_std' %}{{ postgresql_bin_dir }}/pg_probackup-std-{{ postgresql_version }}{% endif %}"
+
+mamonsu_version: "3.5.2"
 mamonsu_download_link: "https://github.com/postgrespro/mamonsu/archive/refs/tags/{{ mamonsu_version }}.tar.gz"
 
 # -------------------------------------------
 # to set up mamonsu monitoring
 mamonsu_install: true                                # true if you need to configure mamonsu
-mamonsu_install_src: true                            # True, if you need to install Mamonsu from the specified version of the source code
-mamonsu_service_user: "postgres"                     # user under which you want to start the service. For example a custom postgres may be required when using some plugins
+mamonsu_service_user: "postgres"                      # user under which you want to start the service. For example a custom postgres may be required when using some plugins
 mamonsu_zabbix_server_ip: "zabbix.server.ru"         # IP zabbix server
 mamonsu_zabbix_server_port: "10051"                  # port zabbix server
 mamonsu_interval_pgbuffercache: 1200                 # set interval call for plugin pg_buffercache.py
 mamonsu_log_path: "/var/log/mamonsu/"                # path name for log file 
-mamonsu_log_file: "agent.log"                        # name log file 
+mamonsu_log_file: "mamonsu.log"                      # name log file 
 mamonsu_plugin_pg_partition: true                    # true if need install plugin pg_partition
+mamonsu_plugin_pg_jobs_check: true                   # true if need install plugin pg_jobs_check
 mamonsu_pgprobackup_enable: "True"                   # true if you need to enable plugin pgprobackup
 mamonsu_pgprobackup_dirs: "/mnt/pgbak"               # dirs for check size: /mnt/pgbak
-mamonsu_pgprobackup_path: "/usr/bin/pg_probackup-13" # full path name for utility pg_probackup
 mamonsu_memoryleakdiagnostic_enable: "True"          # true if you need to enable plugin memoryleakdiagnostic
 mamonsu_memoryleakdiagnostic_anonmem: "4GB"          # memory volume threshold after which we need an investigation about memory leak. 4GB by default.
 mamonsu_relationssize_enable: "False"                # true if you need to enable plugin relationssize

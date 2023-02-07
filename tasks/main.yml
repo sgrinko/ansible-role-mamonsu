@@ -1,162 +1,89 @@
 ---
 - block:  # mamonsu_install|bool
 
-  - block:  # not mamonsu_install_src|bool
-    # Installation from the Packets of the Repository of the desired OS
+  ## Install mamonsu on server
+  - name: Install mamonsu | delete conf directory if exists
+    file:
+      path: "/etc/mamonsu"
+      state: absent
 
-    # Debian/Ubuntu
-    - name: Install mamonsu | Load apt-repo-add.sh file DEBIAN
-      get_url:
-        url: "https://repo.postgrespro.ru/mamonsu/keys/apt-repo-add.sh"  # noqa 204
-        dest: /tmp/
-        timeout: 30
-        validate_certs: false
-        mode: 0700
-      when: ansible_os_family == "Debian"
+  - name: Install mamonsu | Create temporary directories for build mamonsu
+    file:
+      path: "~postgres/build/mamonsu"
+      owner: postgres
+      group: postgres
+      state: directory
+      mode: '0755'
 
-    - name: Install mamonsu | Start apt-repo-add.sh file DEBIAN
-      become: true
-      command: "/tmp/apt-repo-add.sh"
-      when: ansible_os_family == "Debian"
+  - name: Install mamonsu | Download "mamonsu" version {{ mamonsu_version }}
+    get_url:
+      url: "{{ mamonsu_download_link }}"
+      dest: "~postgres/build/mamonsu"
+      timeout: 60
+      validate_certs: false
+    environment: "{{ proxy_env | default({}) }}"
 
-    # RHEL
-    - name: Install mamonsu | Get mamonsu keys for repo.postgrespro.ru RHEL 7
-      yum:
-        name: https://repo.postgrespro.ru/mamonsu/keys/centos.rpm
-        state: present
-      when: ansible_os_family == "RedHat" and
-            ansible_distribution_major_version == '7'
+  - name: Install mamonsu | Unarchive mamonsu
+    command: "tar xzf ~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}.tar.gz --directory ~postgres/build/mamonsu/"
 
-    - name: Install mamonsu | delete conf directory if exists
-      file:
-        path: "/etc/mamonsu"
-        state: absent
+  - name: Install mamonsu | correct pg_probackup.py plugin
+    template:
+      src: pg_probackup.py.j2
+      dest: "~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}/mamonsu/plugins/system/linux/pg_probackup.py"
+      owner: root
+      group: root
+      mode: '0644'
 
-    # DEBIAN
-    - name: Install mamonsu | install package DEBIAN # noqa 403
-      apt:
-        name: "mamonsu={{ mamonsu_version }}"
-        state: installed 
-        update_cache: yes
-      when: ansible_os_family == "Debian"
+  - name: Install mamonsu | correct wal.py plugin
+    template:
+      src: wal.py.j2
+      dest: "~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}/mamonsu/plugins/pgsql/wal.py"
+      owner: root
+      group: root
+      mode: '0644'
 
-    # RHEL 7
-    - name: Install mamonsu | install package RHEL 7# noqa 403
-      yum:
-        name: "mamonsu-{{ mamonsu_version }}"
-        state: installed
-      when: ansible_os_family == "RedHat" and
-            ansible_distribution_major_version == '7'
+  # https://github.com/postgrespro/mamonsu/issues/192
+  - name: Install mamonsu | correct config.py source file
+    shell: sed -i 's/if not (config_status == 600 and config_owner == "mamonsu"):/if not ((config_status == 600 or config_status == 644) and (config_owner == "mamonsu" or config_owner == "postgres" or config_owner == "root")):/' ~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}/mamonsu/lib/config.py
 
-    # RHEL 8
-    - name: Install mamonsu | Get mamonsu keys for repo.postgrespro.ru RHEL 8
-      dnf:
-        name: https://repo.postgrespro.ru/mamonsu/keys/centos.rpm
-        state: latest
-      when: ansible_os_family == "RedHat" and
-            ansible_distribution_major_version >= '8'
+  - name: Install mamonsu | Delete file /usr/bin/mamonsu
+    file:
+      path: /usr/bin/mamonsu
+      state: absent
 
-    - name: Install mamonsu | install package RHEL 8 # noqa 403
-      dnf:
-        name: "mamonsu-{{ mamonsu_version }}"
-        disablerepo: AppStream
-        state: installed
-      when: ansible_os_family == "RedHat" and
-            ansible_distribution_major_version >= '8'
+  - name: Install mamonsu | Delete plugins directory /etc/mamonsu/plugins
+    file:
+      path: "/etc/mamonsu/plugins"
+      state: absent
 
-    - name: Install mamonsu | install RHEL - correct pg_probackup.py plugin
-      template:
-        src: pg_probackup.py.j2
-        dest: /usr/lib/python3.6/site-packages/mamonsu/plugins/system/linux/pg_probackup.py
-        owner: root
-        group: root
-        mode: 0644
-      notify: "restart mamonsu"
-      when: ansible_os_family == "RedHat"
+  - name: Install mamonsu | install mamonsu from source
+    become: true
+    shell: "cd ~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }} && python3 setup.py build && python3 setup.py install"
 
-    - name: Install mamonsu | install package RHEL - correct pg_probackup.py plugin
-      template:
-        src: pg_probackup.py.j2
-        dest: /usr/lib/python3/dist-packages/mamonsu/plugins/system/linux/pg_probackup.py
-        owner: root
-        group: root
-        mode: 0644
-      notify: "restart mamonsu"
-      when: ansible_os_family == "Debian"
+  - name: Install mamonsu | Delete temporary directories for build extensions
+    file:
+      path: "~postgres/build"
+      state: absent
 
-    when: not mamonsu_install_src|bool
+  - name: Install mamonsu | Check that the /usr/bin/mamonsu exists 
+    stat:
+      path: /usr/bin/mamonsu
+    register: mamonsu_file_check
 
-  - block:  # mamonsu_install_src|bool
-    # Installation from source code
+  - name: Install mamonsu | Create symbolic link to /usr/local/bin
+    file:
+      src: "/usr/local/bin/mamonsu"
+      dest: "/usr/bin/mamonsu"
+      state: link
+    when: not mamonsu_file_check.stat.exists
 
-    ## Install mamonsu on server
-    - name: Install mamonsu | delete conf directory if exists
-      file:
-        path: "/etc/mamonsu"
-        state: absent
-
-    - name: Install mamonsu | Create temporary directories for build mamonsu
-      file:
-        path: "~postgres/build/mamonsu"
-        owner: postgres
-        group: postgres
-        state: directory
-        mode: '0755'
-
-    - name: Install mamonsu | Download "mamonsu" version {{ mamonsu_version }}
-      get_url:
-        url: "{{ mamonsu_download_link }}"
-        dest: "~postgres/build/mamonsu"
-        timeout: 60
-        validate_certs: false
-      environment: "{{ proxy_env | default({}) }}"
-
-    - name: Install mamonsu | Unarchive mamonsu
-      command: "tar xzf ~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}.tar.gz --directory ~postgres/build/mamonsu/"
-
-    - name: Install mamonsu | correct pg_probackup.py plugin
-      template:
-        src: pg_probackup.py.j2
-        dest: "~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}/mamonsu/plugins/system/linux/pg_probackup.py"
-        owner: root
-        group: root
-        mode: 0644
-
-    - name: Install mamonsu | Delete file /usr/bin/mamonsu
-      file:
-        path: /usr/bin/mamonsu
-        state: absent
-
-    - name: Install mamonsu | install mamonsu from source
-      become: true
-      shell: "cd ~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }} && python3 setup.py build && python3 setup.py install"
-
-    - name: Install mamonsu | Delete temporary directories for build extensions
-      file:
-        path: "~postgres/build"
-        state: absent
-
-    - name: Install mamonsu | Check that the /usr/bin/mamonsu exists 
-      stat:
-        path: /usr/bin/mamonsu
-      register: mamonsu_file_check
-
-    - name: Install mamonsu | Create symbolic link to /usr/local/bin
-      file:
-        src: "/usr/local/bin/mamonsu"
-        dest: "/usr/bin/mamonsu"
-        state: link
-      when: not mamonsu_file_check.stat.exists
-
-    - name: Install mamonsu | Create init.d/mamonsu file
-      copy:
-        src: mamonsu
-        dest: /etc/init.d/mamonsu
-        owner: root
-        group: root
-        mode: 0755
-
-    when: mamonsu_install_src|bool
+  - name: Install mamonsu | Create init.d/mamonsu file
+    copy:
+      src: mamonsu
+      dest: /etc/init.d/mamonsu
+      owner: root
+      group: root
+      mode: '0755'
 
   # general installation steps ...
   - name: Install mamonsu | Enable log rotation with logrotate
@@ -178,30 +105,43 @@
                 fi
             endscript
         }
-      mode: 0644
+      mode: '0644'
       dest: /etc/logrotate.d/mamonsu
+
+  - name: Install mamonsu | Add mamonsu user
+    user:
+      name: mamonsu
+      shell: /usr/sbin/nologin
+      home: "/var/run/mamonsu"
+      comment: "mamonsu monitoring user"
+      system: yes
 
   - name: Install mamonsu | Create conf directory
     file:
       path: "/etc/mamonsu"
       state: directory
-      mode: 0755
+      owner: "{{ mamonsu_service_user }}"
+      group: "{{ mamonsu_service_user }}"
+      recurse: yes
+      mode: '0755'
 
   - name: Install mamonsu | Create default agent.conf file
     copy:
       src: agent.conf
       dest: /etc/mamonsu/agent.conf
-      owner: root
-      group: root
-      mode: 0644
+      owner: "{{ mamonsu_service_user }}"
+      group: "{{ mamonsu_service_user }}"
+#      mode: '0600'
+      mode: '0644' # https://github.com/postgrespro/mamonsu/issues/192
 
-  - name: Install mamonsu | Prepare agent.conf file (replace "user","database","query_timeout", "address",...) # noqa 305
+  - name: Install mamonsu | Prepare agent.conf file (replace "user","database","query_timeout", "address",...)
     ini_file:
       path: /etc/mamonsu/agent.conf
       section: "{{ item.section }}"
       option: "{{ item.option }}"
       value: "{{ item.value }}"
-      mode: 0644
+#      mode: '0600'
+      mode: '0644' # https://github.com/postgrespro/mamonsu/issues/192
     loop:
       - {section: 'postgres',             option: 'user',                       value: 'mamonsu'}
       - {section: 'postgres',             option: 'database',                   value: 'mamonsu'}
@@ -222,15 +162,6 @@
     loop_control:
       label: "{{ item.option }}"
 
-  - name: Install mamonsu | Copy systemd service file
-    template:
-      src: mamonsu.service.j2
-      dest: /lib/systemd/system/mamonsu.service
-      owner: root
-      group: root
-      mode: 0644
-    notify: "restart mamonsu"
-
   - name: Install mamonsu | delete log directory "{{ mamonsu_log_path }}" if exists
     file:
       path: "{{ mamonsu_log_path }}"
@@ -242,22 +173,29 @@
       owner: "{{ mamonsu_service_user }}"
       group: "{{ mamonsu_service_user }}"
       state: directory
-      mode: 0700
+      mode: '0700'
 
   - name: Install mamonsu | Create plugins directory
     file:
       path: "/etc/mamonsu/plugins"
       state: directory
-      mode: 0755
+      mode: '0755'
 
   - name: Install mamonsu | Copy mamonsu plugin pg_partition.py
     template:
       src: pg_partition.py.j2
       dest: /etc/mamonsu/plugins/pg_partition.py
-      mode: 0644
+      mode: '0644'
     when: mamonsu_plugin_pg_partition|d(true,true)|bool
 
-  - name: Create "~postgres/mamonsu_setup.sql"  # yamllint disable rule:line-length
+  - name: Install mamonsu | Copy mamonsu plugin pg_jobs_check.py
+    template:
+      src: pg_jobs_check.py.j2
+      dest: /etc/mamonsu/plugins/pg_jobs_check.py
+      mode: '0644'
+    when: mamonsu_plugin_pg_jobs_check|d(true,true)|bool
+
+  - name: Create "~postgres/mamonsu_setup.sql"
     copy:
       content: |
         select not pg_is_in_recovery() as is_master \gset
@@ -269,14 +207,14 @@
       dest: ~postgres/mamonsu_setup.sql
       owner: postgres
       group: postgres
-      mode: 0600
+      mode: '0600'
 
   - name: Install mamonsu | Setup bootstrap mamonsu - RECREATE DATABASE IF EXISTS mamonsu
     become: true
     become_user: postgres
     command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_setup.sql postgres"
 
-  - name: Install mamonsu | Create "~postgres/mamonsu_db_genallrun.sql"  # yamllint disable rule:line-length
+  - name: Install mamonsu | Create "~postgres/mamonsu_db_genallrun.sql"
     copy:
       content: |
         select '\c ' || datname || '
@@ -286,21 +224,27 @@
       dest: ~postgres/mamonsu_db_genallrun.sql
       owner: postgres
       group: postgres
-      mode: 0600
+      mode: '0600'
 
-  - name: Install mamonsu | Create "~postgres/mamonsu_user_add.sql"  # yamllint disable rule:line-length
+  - name: Install mamonsu | Create "~postgres/mamonsu_user_add.sql"
     copy:
       content: |
         do $$ begin
           if not pg_is_in_recovery() and not exists(select * from pg_roles where rolname = 'mamonsu') then
             CREATE ROLE mamonsu LOGIN NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
           end if;
+          if not pg_is_in_recovery() and not exists(select * from pg_roles where rolname = 'pgbouncer') then
+            CREATE ROLE pgbouncer LOGIN NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
+          end if;
+          if not pg_is_in_recovery() and exists(select * from pg_namespace where nspname = 'cron') then
+            GRANT USAGE ON SCHEMA cron TO mamonsu;
+          end if;
         end
         $$;
       dest: ~postgres/mamonsu_user_add.sql
       owner: postgres
       group: postgres
-      mode: 0600
+      mode: '0600'
 
   - name: Install mamonsu | Copy mamonsu setup DB files to server
     template:
@@ -308,38 +252,49 @@
       dest: ~postgres/mamonsu_right_add.sql
       owner: postgres
       group: postgres
-      mode: 0644
+      mode: '0644'
 
   - name: Install mamonsu | Setup bootstrap mamonsu - add rights to DB
     become: true
     become_user: postgres
     command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_user_add.sql postgres"
 
-  - name: Install mamonsu | Create extension pg_buffercache on database mamonsu
+  - name: Install mamonsu | Create extension on database mamonsu
     become: true
     become_user: postgres
     shell: |
-      if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then # noqa 204
-        {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -U postgres -d mamonsu -c 'CREATE EXTENSION IF NOT EXISTS pg_buffercache SCHEMA public;' # noqa 204
+      if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
+        {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -U postgres -d mamonsu -c 'CREATE EXTENSION IF NOT EXISTS pg_buffercache SCHEMA public;'
+      fi
+      if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
+        {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -U postgres -d mamonsu -c 'CREATE EXTENSION IF NOT EXISTS pg_background SCHEMA public;'
       fi
 
-  - name: Install mamonsu | Setup bootstrap mamonsu - create environment # noqa 305
+  - name: Install mamonsu | Setup bootstrap mamonsu - create environment
     become: true
     become_user: postgres
     shell: |
-      if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then # noqa 204
+      if {{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -tAX -c 'select case when pg_is_in_recovery() then 0 else 1 end as master' postgres | grep '1' ; then
         mamonsu bootstrap -x -M mamonsu -U postgres -d mamonsu --port={{ postgresql_port|d(5432,true) }} ;
       fi
 
   - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (generate script)
     become: true
     become_user: postgres
-    command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres" # noqa 204
+    command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun.sql -t -A -o ~postgres/mamonsu_db_genallrun_out.sql postgres"
 
   - name: Install mamonsu | Setup bootstrap mamonsu - add users to DB (run script)
     become: true
     become_user: postgres
     command: "{{ postgresql_bin_dir }}/psql -p {{ postgresql_port|d(5432,true) }} -f ~postgres/mamonsu_db_genallrun_out.sql postgres"
+
+  - name: Install mamonsu | Copy systemd service file
+    template:
+      src: mamonsu.service.j2
+      dest: /lib/systemd/system/mamonsu.service
+      owner: root
+      group: root
+      mode: '0644'
     notify: "restart mamonsu"
 
   environment: "{{ proxy_env | default({}) }}"

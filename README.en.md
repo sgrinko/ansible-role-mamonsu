@@ -8,11 +8,10 @@ Install [mamonsu](https://github.com/postgrespro/mamonsu) (Monitoring agent for 
 All x86-64 Linux distributions.
 
 mamonsu is written on Python language and distributed as a deb or rpm package. You can also install from the source code with GitHub.
+The current ANSIBLE script is assembled from the sources.
 
 ## Role Variables
 `mamonsu_install` - true if need install mamonsu
-
-`mamonsu_install_src` - true If you need to install Mamonsu from the source code on GitHub. Default: `true`
 
 `mamonsu_version` - mamonsu version to be installed
 
@@ -21,6 +20,17 @@ mamonsu is written on Python language and distributed as a deb or rpm package. Y
 `mamonsu_zabbix_server_ip` - IP zabbix server. Example: zabbix.server.ru
 
 `proxy_env` - use proxy server to download mamonsu packages (if required).
+
+`PostgreSQL_Vendor` - version of the version of Postgres. `vanilla` or `pgpro_std`
+
+`postgreSQL_version` - version of postgres for which Mamonsu is installed
+
+`mamonsu_plugin_pg_jobs_check` - true if need install plugin pg_jobs_check. By default: `True`
+
+`mamonsu_plugin_pg_partition` - true if need install plugin pg_partition. By default: `True`
+
+Watch the Defaults/[mail.yml] file (./ Defaults/Main.yml) for details.
+
 ###### example:
 ```
 proxy_env:
@@ -37,7 +47,7 @@ proxy_env:
 
 `mamonsu_interval_pgbuffercache` -  set interval call for plugin pg_buffercache.py in seconds. Default: `1200`
 
-`mamonsu_log_file` - path and name log file. Default: `/var/log/mamonsu/agent.log`
+`mamonsu_log_file` - path and name log file. Default: `/var/log/mamonsu/mamonsu.log`
 
 `postgresql_port` - Port for access to PostgreSQL service. Default: `5432`
 

@@ -21,7 +21,7 @@ DESC="Zabbix active agent"
 CONFIG=/etc/mamonsu/agent.conf
 PIDDIR=/var/run/mamonsu
 PIDFILE=$PIDDIR/mamonsu.pid
-LOGFILE=/var/log/mamonsu/agent.log
+LOGFILE=/var/log/mamonsu/mamonsu.log
 
 COMMAND="/usr/bin/$NAME -d -a /etc/mamonsu/plugins -c $CONFIG -p $PIDFILE"
 RUNAS=mamonsu
