@@ -34,17 +34,8 @@
       group: root
       mode: '0644'
 
-  - name: Install mamonsu | correct wal.py plugin
-    template:
-      src: wal.py.j2
-      dest: "~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}/mamonsu/plugins/pgsql/wal.py"
-      owner: root
-      group: root
-      mode: '0644'
-
-  # https://github.com/postgrespro/mamonsu/issues/192
-  - name: Install mamonsu | correct config.py source file
-    shell: sed -i 's/if not (config_status == 600 and config_owner == "mamonsu"):/if not ((config_status == 600 or config_status == 644) and (config_owner == "mamonsu" or config_owner == "postgres" or config_owner == "root")):/' ~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}/mamonsu/lib/config.py
+  - name: Install mamonsu | correct replication.py source file (ignore pgautofailover slots)
+    shell: sed -i "s/WHERE active = 'false';/WHERE active = 'false' and slot_name not ilike 'pgautofailover_standby_%';/" ~postgres/build/mamonsu/mamonsu-{{ mamonsu_version }}/mamonsu/plugins/pgsql/replication.py
 
   - name: Install mamonsu | Delete file /usr/bin/mamonsu
     file:
@@ -200,9 +191,8 @@
       content: |
         select not pg_is_in_recovery() as is_master \gset
         \if :is_master
-          select pg_terminate_backend(pid) from pg_catalog.pg_stat_activity where datname = 'mamonsu';
-          DROP DATABASE IF EXISTS mamonsu;
-          CREATE DATABASE mamonsu;
+          DROP DATABASE IF EXISTS mamonsu with(force);
+          CREATE DATABASE mamonsu WITH IS_TEMPLATE = True;
         \endif
       dest: ~postgres/mamonsu_setup.sql
       owner: postgres
@@ -220,7 +210,7 @@
         select '\c ' || datname || '
         \i ~postgres/mamonsu_right_add.sql
         '
-        from pg_database where not datistemplate and not pg_is_in_recovery();
+        from pg_database where (datname='mamonsu' or not datistemplate) and not pg_is_in_recovery();
       dest: ~postgres/mamonsu_db_genallrun.sql
       owner: postgres
       group: postgres
@@ -295,7 +285,13 @@
       owner: root
       group: root
       mode: '0644'
-    notify: "restart mamonsu"
+
+- name: Install mamonsu | Restart mamonsu service
+  systemd:
+    daemon_reload: true
+    name: mamonsu
+    enabled: true
+    state: restarted
 
   environment: "{{ proxy_env | default({}) }}"
   when: mamonsu_install|bool

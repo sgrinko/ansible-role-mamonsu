@@ -18,15 +18,15 @@ postgresql_bin_dir: "{% if postgresql_vendor == 'vanilla' %}/usr/{{ postgresql_s
 # Path to actual home dir
 postgresql_home_dir: "{% if ansible_os_family == 'Debian' %}/var/lib/postgresql{% elif (ansible_os_family == 'RedHat' or ansible_os_family == 'RED') %}/var/lib/pgsql{% endif %}"
 
-mamonsu_pgprobackup_path: "{% if postgresql_vendor == 'vanilla' %}/usr/bin/pg_probackup-{{ postgresql_version }}{% elif postgresql_vendor == 'pgpro_std' %}{{ postgresql_bin_dir }}/pg_probackup-std-{{ postgresql_version }}{% endif %}"
+mamonsu_pgprobackup_path: "{% if postgresql_vendor == 'vanilla' %}/usr/bin/pg_probackup-{{ postgresql_version }}{% elif postgresql_vendor == 'pgpro_std' %}/usr/bin/pg_probackup-std-{{ postgresql_version }}{% endif %}"
 
-mamonsu_version: "3.5.2"
+mamonsu_version: "3.5.3"
 mamonsu_download_link: "https://github.com/postgrespro/mamonsu/archive/refs/tags/{{ mamonsu_version }}.tar.gz"
 
 # -------------------------------------------
 # to set up mamonsu monitoring
 mamonsu_install: true                                # true if you need to configure mamonsu
-mamonsu_service_user: "postgres"                      # user under which you want to start the service. For example a custom postgres may be required when using some plugins
+mamonsu_service_user: "postgres"                     # user under which you want to start the service. For example a custom postgres may be required when using some plugins
 mamonsu_zabbix_server_ip: "zabbix.server.ru"         # IP zabbix server
 mamonsu_zabbix_server_port: "10051"                  # port zabbix server
 mamonsu_interval_pgbuffercache: 1200                 # set interval call for plugin pg_buffercache.py
