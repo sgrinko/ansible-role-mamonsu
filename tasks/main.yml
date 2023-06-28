@@ -286,12 +286,12 @@
       group: root
       mode: '0644'
 
-- name: Install mamonsu | Restart mamonsu service
-  systemd:
-    daemon_reload: true
-    name: mamonsu
-    enabled: true
-    state: restarted
+  - name: Install mamonsu | Restart mamonsu service
+    systemd:
+      daemon_reload: true
+      name: mamonsu
+      enabled: true
+      state: restarted
 
   environment: "{{ proxy_env | default({}) }}"
   when: mamonsu_install|bool
